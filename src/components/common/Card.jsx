@@ -9,14 +9,20 @@ const Card = ({ book }) => {
     <CardContainer onClick={() => navigate(`books/${book.id}`)}>
       <ThumbnailWrapper>
         <div>
-          <img src={book.coverImgUrl} alt={book.title} />
+          <img src={book.coverImageUrl} alt={book.title} />
+          {/* 베스트셀러 뱃지 - 베스트셀러인 경우에만 표시 */}
+          {book.isBestseller && (
+            <BestsellerBadge>
+              <img src="/logo/orangebestseller.svg" alt="베스트셀러" />
+            </BestsellerBadge>
+          )}
         </div>
       </ThumbnailWrapper>
       <Meta>
         <Category>{book.categoryName}</Category>
         <Title>{book.title}</Title>
-        <Author>{book.author}</Author>
-        <Date>{book.createDate.substring(0, 10)}</Date>
+        <Author>{book.authorNickname}</Author>
+        <Date>{book.publishedAt.substring(0, 10)}</Date>
       </Meta>
     </CardContainer>
   );
@@ -66,6 +72,28 @@ const ThumbnailWrapper = styled.div`
     &:hover {
       transform: scale(1.2);
     }
+  }
+`;
+
+// 베스트셀러 뱃지 스타일
+const BestsellerBadge = styled.div`
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 70px;
+  height: 70px;
+  z-index: 10;
+
+  & > img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  }
+
+  /* 호버 시 뱃지는 확대되지 않도록 */
+  &:hover {
+    transform: none;
   }
 `;
 

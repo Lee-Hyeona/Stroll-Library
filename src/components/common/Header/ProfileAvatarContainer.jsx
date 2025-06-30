@@ -1,21 +1,31 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import styled from "styled-components";
 import ProfilePopover from "./ProfilePopover";
 
 function ProfileAvatarContainer({ profile }) {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const [triggerRect, setTriggerRect] = useState(null);
+  const triggerRef = useRef(null);
+
+  const handleAvatarClick = () => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setTriggerRect(rect);
+    }
+    setIsPopoverOpen(!isPopoverOpen);
+  };
+
   return (
     <ProfileContainer>
-      <UserProfileButton
-        onClick={() => {
-          console.log("test");
-          setIsPopoverOpen(!isPopoverOpen);
-        }}
-      >
-        <UserProfileIcon src={profile.avatar} alt={profile.name} />
+      <UserProfileButton ref={triggerRef} onClick={handleAvatarClick}>
+        <UserProfileIcon src={"/profile/profile.svg"} alt={profile?.name} />
       </UserProfileButton>
       {isPopoverOpen && (
-        <ProfilePopover setPopoverOpen={setIsPopoverOpen} profile={profile} />
+        <ProfilePopover
+          setPopoverOpen={setIsPopoverOpen}
+          profile={profile}
+          triggerRect={triggerRect}
+        />
       )}
     </ProfileContainer>
   );
@@ -38,6 +48,7 @@ const UserProfileButton = styled.div`
   font-weight: 500;
   font-size: 1rem;
 `;
+
 const UserProfileIcon = styled.img`
   width: 2rem;
   height: 2rem;

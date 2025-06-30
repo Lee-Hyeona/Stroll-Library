@@ -2,27 +2,28 @@ import React, { useState } from "react";
 import styled from "styled-components";
 import { Link, useNavigate } from "react-router-dom";
 import ProfileAvatarContainer from "./ProfileAvatarContainer";
-
+import { useAuthStore } from "../../../store/auth";
 const profile = {
   name: "홍길동",
   email: "hong@example.com",
   avatar: "/profile/profile.svg",
-  is_author: false, // 작가 테스트를 위해 true로 설정 (나중에 실제 사용자 정보로 대체)
+  is_author: true, // 작가 테스트를 위해 true로 설정 (나중에 실제 사용자 정보로 대체)
 };
 
 function Header() {
   const navigate = useNavigate();
-  const [isLogin, setIsLogin] = useState(true);
-
+  // const [isLogin, setIsLogin] = useState(true);
+  const { userInfo } = useAuthStore((state) => state);
   return (
     <HeaderContainer>
       <Link to="/">
         <Logo src="/logo/logo.svg" alt="Book Management System" />
       </Link>
 
-      {isLogin ? (
+      {/* {isLogin ? ( */}
+      {userInfo ? (
         <ButtonGroup>
-          <ProfileAvatarContainer profile={profile} />
+          <ProfileAvatarContainer profile={userInfo} />
         </ButtonGroup>
       ) : (
         <ButtonGroup>

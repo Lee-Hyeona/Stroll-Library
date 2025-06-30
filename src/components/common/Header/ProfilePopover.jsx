@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import styled from "styled-components";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { BDS } from "../../../styles/BDS";
 
-function ProfilePopover({ setPopoverOpen, profile }) {
+function ProfilePopover({ setPopoverOpen, profile, triggerRect }) {
   const navigate = useNavigate();
 
   // 메뉴 항목 클릭 핸들러
@@ -41,9 +42,15 @@ function ProfilePopover({ setPopoverOpen, profile }) {
 
   const menuItems = profile?.is_author ? authorMenuItems : userMenuItems;
 
-  return (
+  return createPortal(
     <>
-      <ProfilePopoverContainer>
+      <ProfilePopoverBackgroundOverlay onClick={() => setPopoverOpen(false)} />
+      <ProfilePopoverContainer
+        style={{
+          top: triggerRect ? triggerRect.bottom + 8 : "auto",
+          left: triggerRect ? triggerRect.right - 290 : "auto",
+        }}
+      >
         <UserInfo>
           {profile?.is_author ? (
             <UserNameWithBadge>
@@ -51,7 +58,9 @@ function ProfilePopover({ setPopoverOpen, profile }) {
               <AuthorBadge>작가</AuthorBadge>
             </UserNameWithBadge>
           ) : (
-            <UserName>{profile?.name}</UserName>
+            <UserNameWithBadge>
+              <UserName>{profile?.name}</UserName>
+            </UserNameWithBadge>
           )}
         </UserInfo>
 
@@ -68,25 +77,22 @@ function ProfilePopover({ setPopoverOpen, profile }) {
           </MenuItem>
         </MenuList>
       </ProfilePopoverContainer>
-      <ProfilePopoverBackgroundOverlay onClick={() => setPopoverOpen(false)} />
-    </>
+    </>,
+    document.body
   );
 }
 
 export default ProfilePopover;
 
 const ProfilePopoverContainer = styled.div`
-  position: absolute;
-  bottom: 0;
-  right: 0;
+  position: fixed;
   width: 15rem;
   padding: 1.5rem;
   background-color: ${BDS.palette.white};
   border: 1px solid #e1e5e9;
   border-radius: 0.5rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transform: translateY(100%);
-  z-index: 100;
+  z-index: 120;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -94,9 +100,9 @@ const ProfilePopoverContainer = styled.div`
 
 const ProfilePopoverBackgroundOverlay = styled.div`
   position: fixed;
-  z-index: 90;
-  top: 0px;
-  left: 0px;
+  z-index: 110;
+  top: 0;
+  left: 0;
   width: 100vw;
   height: 100vh;
   background-color: rgba(0, 0, 0, 0.3);

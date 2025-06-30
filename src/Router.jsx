@@ -4,10 +4,20 @@ import Roots from "./pages/Roots";
 import NewBook from "./pages/newbook/NewBook";
 import Edit from "./pages/edit/Edit";
 import BookDetailPage from "./pages/bookDetail/BookDetail";
+import BookContent from "./pages/bookDetail/BookContent";
 import SignUp from "./pages/signup/SignUp";
 import SignUpComplete from "./pages/signup/SignUpComplete";
 import Login from "./pages/login/Login";
 import MyPage from "./pages/mypage/MyPage";
+import Subscription from "./pages/subscription/Subscription";
+import AuthorRegistration from "./pages/authorregistration/AuthorRegistration";
+import WriteBook from "./pages/writebook/WriteBook";
+import MyWritings from "./pages/writebook/MyWritings";
+import BookPublish from "./pages/writebook/BookPublish";
+import ManagePassword from "./pages/management/ManagePassword";
+import ManageAuthorList from "./pages/management/ManageAuthorList";
+import ManageAuthorDetail from "./pages/management/ManageAuthorDetail";
+
 const router = createBrowserRouter([
   {
     path: "/",
@@ -30,6 +40,10 @@ const router = createBrowserRouter([
         element: <BookDetailPage />,
       },
       {
+        path: "books/:id/content",
+        element: <BookContent />,
+      },
+      {
         path: "signup",
         element: <SignUp />,
       },
@@ -44,6 +58,38 @@ const router = createBrowserRouter([
       {
         path: "account", // 👈 계정 정보 페이지 경로 추가
         element: <MyPage />,
+      },
+      {
+        path: "subscription",
+        element: <Subscription />,
+      },
+      {
+        path: "author/register",
+        element: <AuthorRegistration />,
+      },
+      {
+        path: "write", // 글쓰기 페이지
+        element: <WriteBook />,
+      },
+      {
+        path: "drafts", // 임시 저장 목록 페이지
+        element: <MyWritings />,
+      },
+      {
+        path: "publish", // 책 출간 페이지
+        element: <BookPublish />,
+      },
+      {
+        path: "admin/password", // 관리자 인증 페이지
+        element: <ManagePassword />,
+      },
+      {
+        path: "admin/authors", // 작가 신청 목록 페이지
+        element: <ManageAuthorList />,
+      },
+      {
+        path: "admin/authors/:userId", // 작가 신청 상세 페이지
+        element: <ManageAuthorDetail />,
       },
     ],
   },

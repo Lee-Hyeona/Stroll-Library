@@ -30,28 +30,37 @@ function Login() {
 
   return (
     <Container>
-      <Form onSubmit={handleSubmit}>
+      <FormContainer>
         <Title>로그인</Title>
+        <Subtitle>계정에 로그인하여 시작하세요</Subtitle>
 
-        <Label>아이디</Label>
-        <Input
-          type="text"
-          name="username"
-          value={form.username}
-          onChange={handleChange}
-          required
-        />
+        <Form onSubmit={handleSubmit}>
+          <InputGroup>
+            <Label>아이디</Label>
+            <Input
+              type="text"
+              name="username"
+              value={form.username}
+              onChange={handleChange}
+              placeholder="아이디를 입력하세요"
+              required
+            />
+          </InputGroup>
 
-        <Label>비밀번호</Label>
-        <Input
-          type="password"
-          name="password"
-          value={form.password}
-          onChange={handleChange}
-          required
-        />
+          <InputGroup>
+            <Label>비밀번호</Label>
+            <Input
+              type="password"
+              name="password"
+              value={form.password}
+              onChange={handleChange}
+              placeholder="비밀번호를 입력하세요"
+              required
+            />
+          </InputGroup>
 
-        <SubmitButton type="submit">로그인</SubmitButton>
+          <SubmitButton type="submit">로그인</SubmitButton>
+        </Form>
 
         <RegisterBox>
           아직 미회원이라면?{" "}
@@ -59,7 +68,7 @@ function Login() {
             회원가입하기
           </RegisterLink>
         </RegisterBox>
-      </Form>
+      </FormContainer>
     </Container>
   );
 }
@@ -68,66 +77,112 @@ export default Login;
 
 // ---------- styled-components ----------
 const Container = styled.div`
+  min-height: 100vh;
   display: flex;
+  align-items: center;
   justify-content: center;
-  padding: 10rem 1rem;
+  background-color: #ffffff;
+  padding: 2rem 1rem;
+`;
+
+const FormContainer = styled.div`
+  width: 100%;
+  max-width: 25rem;
+  background-color: #ffffff;
+  padding: 2.5rem;
+  border: 0.0625rem solid #e9ecef;
+  border-radius: 0.75rem;
+  box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+`;
+
+const Title = styled.h1`
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #101010;
+  text-align: center;
+  margin-bottom: 0.5rem;
+`;
+
+const Subtitle = styled.p`
+  color: #6c757d;
+  text-align: center;
+  margin-bottom: 2rem;
+  font-size: 0.875rem;
 `;
 
 const Form = styled.form`
   display: flex;
   flex-direction: column;
-  width: 100%;
-  max-width: 400px;
 `;
 
-const Title = styled.h2`
-  text-align: center;
-  margin-bottom: 2rem;
+const InputGroup = styled.div`
+  margin-bottom: 1.25rem;
 `;
 
 const Label = styled.label`
-  margin: 0.75rem 0 0.25rem;
-  font-weight: bold;
-  text-align: left;
   display: block;
+  font-weight: 600;
+  color: #101010;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
 `;
 
 const Input = styled.input`
-  padding: 0.5rem;
+  width: 100%;
+  padding: 0.75rem;
+  border: 0.0625rem solid #dee2e6;
+  border-radius: 0.5rem;
   font-size: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  color: #101010;
+  background-color: #ffffff;
+  transition: border-color 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: #101010;
+    box-shadow: 0 0 0 0.125rem rgba(16, 16, 16, 0.1);
+  }
+
+  &::placeholder {
+    color: #adb5bd;
+  }
 `;
 
 const SubmitButton = styled.button`
-  margin-top: 1rem;
-  padding: 0.75rem;
+  width: 100%;
+  padding: 0.875rem;
   font-size: 1rem;
-  font-weight: bold;
-  background-color: #000;
-  color: #fff;
+  font-weight: 600;
+  background-color: #101010;
+  color: #ffffff;
   border: none;
-  border-radius: 6px;
+  border-radius: 0.5rem;
   cursor: pointer;
+  transition: background-color 0.2s ease;
+  margin-bottom: 1.5rem;
 
   &:hover {
-    background-color: #333;
+    background-color: #333333;
+  }
+
+  &:active {
+    background-color: #000000;
   }
 `;
 
 const RegisterBox = styled.div`
-  margin-top: 1rem;
-  font-size: 0.95rem;
-  text-align: right;
+  text-align: center;
+  font-size: 0.875rem;
+  color: #6c757d;
 `;
 
 const RegisterLink = styled.span`
-  margin-left: 0.3rem;
-  font-weight: bold;
-  color: #0070f3;
+  color: #101010;
+  font-weight: 600;
   cursor: pointer;
+  text-decoration: underline;
 
   &:hover {
-    text-decoration: underline;
+    color: #333333;
   }
 `;

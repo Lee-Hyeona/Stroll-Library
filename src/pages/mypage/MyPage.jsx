@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import styled from "styled-components";
+import { useNavigate } from "react-router-dom";
 
 function MyPage() {
+  const navigate = useNavigate();
   // 가상의 사용자 정보 (실제로는 API에서 가져와야 함)
   const [userInfo, setUserInfo] = useState({
     name: "홍길동",
@@ -11,6 +13,14 @@ function MyPage() {
     authorStatus: "미인증", // "미인증", "승인 대기", "인증 완료"
     subscriptionEndDate: null,
   });
+
+  const handleSubscribe = () => {
+    navigate("/subscription");
+  };
+
+  const handleAuthorRegister = () => {
+    navigate("/author/register");
+  };
 
   return (
     <Container>
@@ -38,14 +48,18 @@ function MyPage() {
               ? `구독중 (${userInfo.subscriptionEndDate || "만료일 미정"})`
               : "미구독"}
           </Value>
-          {!userInfo.isSubscribed && <ActionButton>구독하기</ActionButton>}
+          {!userInfo.isSubscribed && (
+            <ActionButton onClick={handleSubscribe}>구독하기</ActionButton>
+          )}
         </Row>
 
         <Label>작가 인증</Label>
         <Row>
           <Value>{userInfo.authorStatus}</Value>
           {userInfo.authorStatus === "미인증" && (
-            <ActionButton>작가 등록하기</ActionButton>
+            <ActionButton onClick={handleAuthorRegister}>
+              작가 등록하기
+            </ActionButton>
           )}
         </Row>
       </Section>

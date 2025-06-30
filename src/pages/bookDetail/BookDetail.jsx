@@ -5,34 +5,23 @@ import styled from "styled-components";
 import { ModalButton } from "../../components/bookDetail/ModalButton";
 import Modal from "../../components/common/Modal";
 import { BDS } from "../../styles/BDS";
+import apiClient from "../../service/axios";
+import { useAuthStore } from "../../store/auth";
 
-const BookDetailPage = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const [book, setBook] = useState(null);
-  // 권한 관련 상태
-  const [hasAccess, setHasAccess] = useState(false);
-  const [showContent, setShowContent] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  // 가상의 사용자 권한 상태 (실제 구현시 전역 상태나 API에서 가져옴)
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [ownedBooks, setOwnedBooks] = useState([]);
-
-  useEffect(() => {
-    // 테스트용 가상 데이터 (실제 API 대신 사용)
-    const mockBook = {
-      id: id,
-      coverImgUrl:
-        "https://cdn.openai.com/API/docs/images/sunlit_lounge_result.png", // 이미지 없으면 테두리만 보임
-      title: "가상의 책 제목",
-      author: "홍길동",
-      categoryName: "테스트 카테고리",
-      createDate: "2024-01-01T10:00:00Z",
-      updateDate: "2024-05-01T12:00:00Z",
-      content:
-        "이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n",
-      price: 1000, // 포인트 가격
-      fullContent: `제1장 시작
+// 테스트용 가상 데이터 (실제 API 대신 사용)
+const mockBook = {
+  id: 0,
+  coverImgUrl:
+    "https://cdn.openai.com/API/docs/images/sunlit_lounge_result.png", // 이미지 없으면 테두리만 보임
+  title: "가상의 책 제목",
+  author: "홍길동",
+  categoryName: "테스트 카테고리",
+  createDate: "2024-01-01T10:00:00Z",
+  updateDate: "2024-05-01T12:00:00Z",
+  content:
+    "이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n",
+  price: 1000, // 포인트 가격
+  fullContent: `제1장 시작
 
 이것은 책의 전체 내용입니다. 
 실제로는 훨씬 긴 내용이 여기에 들어갑니다.
@@ -47,13 +36,36 @@ const BookDetailPage = () => {
 제3장 결말
 
 마지막 장입니다.`,
-    };
-    setBook(mockBook);
+};
 
-    // 가상의 사용자 권한 설정 (테스트용)
-    // 실제로는 사용자 정보 API에서 가져와야 함
-    setIsSubscribed(false); // 테스트를 위해 false로 설정
-    setOwnedBooks([]); // 테스트를 위해 빈 배열로 설정
+const BookDetailPage = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [book, setBook] = useState(null);
+  const { userInfo } = useAuthStore((state) => state);
+  // 권한 관련 상태
+  const [hasAccess, setHasAccess] = useState(false);
+  const [showContent, setShowContent] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoadingAccess, setIsLoadingAccess] = useState(false);
+  const [isLoadingPurchase, setIsLoadingPurchase] = useState(false);
+  const [isLoadingPurchaseComplete, setIsLoadingPurchaseComplete] =
+    useState(false);
+
+  const [purchaseData, setPurchaseData] = useState(null);
+  // 구매 관련 모달 상태
+  const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isPurchaseCompleteModalOpen, setIsPurchaseCompleteModalOpen] =
+    useState(false);
+  const [isInsufficientPointsModalOpen, setIsInsufficientPointsModalOpen] =
+    useState(false);
+
+  // 유저 포인트 상태
+  const [userPoints, setUserPoints] = useState(2000); // 테스트용 초기 포인트 (포인트 부족 테스트를 위해서는 500 등으로 설정)
+
+  useEffect(() => {
+    setBook(mockBook);
 
     // 실제 API 연동 시 아래 주석 해제하고 위 mockBook 삭제하세요.
     /*
@@ -66,21 +78,43 @@ const BookDetailPage = () => {
     */
   }, [id]);
 
-  // 책 읽기 권한 확인
   const checkAccess = () => {
-    if (!book) return false;
+    setIsLoadingAccess(true);
+    console.log(userInfo);
+    const res = apiClient
+      .get(
+        `/userAccessProfiles/${userInfo?.id}/accesstocontent?productId=${id}`
+      )
+      .then((res) => {
+        console.log(res);
+        if (res.data.hasAccess) {
+          return true;
+        } else {
+          return false;
+        }
+      })
+      .catch((err) => {
+        console.error("책 정보를 불러오는 데 실패했습니다", err);
+        return false;
+      })
+      .finally(() => {
+        setIsLoadingAccess(false);
+      });
 
-    // 구독 중이거나 책을 구매한 경우 권한 있음
-    return isSubscribed || ownedBooks.includes(book.id);
+    return res;
   };
 
   // 책 읽기 버튼 클릭 핸들러
-  const handleReadBook = () => {
-    const hasBookAccess = checkAccess();
+  const handleReadBook = async () => {
+    if (!userInfo) {
+      setIsLoginModalOpen(true);
+      return;
+    }
+    const hasBookAccess = await checkAccess();
 
     if (hasBookAccess) {
-      // 권한이 있으면 책 내용 표시
-      setShowContent(true);
+      // 권한이 있으면 BookContent 페이지로 이동
+      navigate(`/books/${id}/content`);
     } else {
       // 권한이 없으면 모달 표시
       setIsModalOpen(true);
@@ -94,9 +128,42 @@ const BookDetailPage = () => {
   };
 
   // 구매하기 버튼 핸들러
-  const handlePurchase = () => {
-    setIsModalOpen(false);
-    navigate(`/purchase/${id}`); // 구매 페이지로 이동
+  const handlePurchase = async () => {
+    setIsLoadingPurchase(true);
+    const res = await apiClient
+      .get(`/userAccessProfiles/${userInfo?.id}/checkpurchaseability`)
+      .then((res) => {
+        setPurchaseData(res?.data);
+      })
+      .catch((err) => {
+        console.error("구매 가능 여부를 확인하는 데 실패했습니다", err);
+      })
+      .finally(() => {
+        setIsLoadingPurchase(false);
+        setIsModalOpen(false);
+      });
+    // 포인트 확인 후 적절한 모달 표시
+    if (res?.data?.canPurchase) {
+      setIsPurchaseModalOpen(true);
+    } else {
+      setIsInsufficientPointsModalOpen(true);
+    }
+  };
+
+  // 실제 구매 처리
+  const handleConfirmPurchase = () => {
+    // 포인트 차감
+    // setUserPoints(userPoints - book.price);
+    // 구매한 책 목록에 추가
+    // setOwnedBooks([...ownedBooks, book.id]);
+    // 구매 확인 모달 닫고 완료 모달 열기
+    setIsPurchaseModalOpen(false);
+    setIsPurchaseCompleteModalOpen(true);
+  };
+
+  // 구매 완료 후 모달 닫기
+  const handlePurchaseComplete = () => {
+    setIsPurchaseCompleteModalOpen(false);
   };
 
   if (!book) return <Wrapper>로딩 중...</Wrapper>;
@@ -139,16 +206,10 @@ const BookDetailPage = () => {
         </ContentWrapper>
       </Container>
       <ReadButtonWrapper>
-        <ReadButton onClick={handleReadBook}>책 읽기</ReadButton>
+        <ReadButton onClick={handleReadBook} disabled={isLoadingAccess}>
+          {isLoadingAccess ? "로딩중..." : "책 읽기"}
+        </ReadButton>
       </ReadButtonWrapper>
-
-      {/* 책 내용 표시 영역 */}
-      {showContent && (
-        <BookContentWrapper>
-          <BookContentTitle>책 내용</BookContentTitle>
-          <BookContentText>{book.fullContent}</BookContentText>
-        </BookContentWrapper>
-      )}
 
       {/* 권한 없을 때 표시되는 모달 */}
       <Modal
@@ -164,7 +225,102 @@ const BookDetailPage = () => {
             구독하기
           </ModalActionButton>
           <ModalActionButton onClick={handlePurchase} variant="secondary">
-            구매하기 ({book.price}p)
+            {isLoadingPurchase ? "로딩중..." : "구매하기"}
+          </ModalActionButton>
+        </ModalButtonGroup>
+      </Modal>
+      {/* 로그인 요청 모달 */}
+      <Modal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        title="로그인 필요"
+      >
+        <ModalText>로그인이 필요합니다</ModalText>
+        <ModalButtonGroup>
+          <ModalActionButton
+            onClick={() => setIsLoginModalOpen(false)}
+            variant="secondary"
+          >
+            닫기
+          </ModalActionButton>
+        </ModalButtonGroup>
+      </Modal>
+      {/* 구매 확인 모달 */}
+      <Modal
+        isOpen={isPurchaseModalOpen}
+        onClose={() => setIsPurchaseModalOpen(false)}
+        title="구매 확인"
+      >
+        <PurchaseInfoWrapper>
+          <PurchaseInfoItem>
+            <PurchaseInfoLabel>구매 포인트</PurchaseInfoLabel>
+            <PurchaseInfoValue>{purchaseData?.productPrice}p</PurchaseInfoValue>
+          </PurchaseInfoItem>
+          <PurchaseInfoItem>
+            <PurchaseInfoLabel>내 포인트</PurchaseInfoLabel>
+            <PurchaseInfoValue>{purchaseData?.userPoints}p</PurchaseInfoValue>
+          </PurchaseInfoItem>
+          <PurchaseInfoItem>
+            <PurchaseInfoLabel>구매 후 내 포인트</PurchaseInfoLabel>
+            <PurchaseInfoValue>
+              {purchaseData?.remainingPoints}p
+            </PurchaseInfoValue>
+          </PurchaseInfoItem>
+        </PurchaseInfoWrapper>
+        <ModalButtonGroup>
+          <ModalActionButton
+            onClick={() => setIsPurchaseModalOpen(false)}
+            variant="secondary"
+          >
+            취소
+          </ModalActionButton>
+          <ModalActionButton onClick={handleConfirmPurchase} variant="primary">
+            구매하기
+          </ModalActionButton>
+        </ModalButtonGroup>
+      </Modal>
+
+      {/* 구매 완료 모달 */}
+      <Modal
+        isOpen={isPurchaseCompleteModalOpen}
+        onClose={handlePurchaseComplete}
+        title="구매 완료"
+      >
+        <ModalText>구매가 완료되었습니다!</ModalText>
+        <ModalButtonGroup>
+          <ModalActionButton onClick={handlePurchaseComplete} variant="primary">
+            닫기
+          </ModalActionButton>
+        </ModalButtonGroup>
+      </Modal>
+
+      {/* 포인트 부족 모달 */}
+      <Modal
+        isOpen={isInsufficientPointsModalOpen}
+        onClose={() => setIsInsufficientPointsModalOpen(false)}
+        title="포인트 부족"
+      >
+        <PurchaseInfoWrapper>
+          <PurchaseInfoItem>
+            <PurchaseInfoLabel>구매 포인트</PurchaseInfoLabel>
+            <PurchaseInfoValue>{purchaseData?.productPrice}p</PurchaseInfoValue>
+          </PurchaseInfoItem>
+          <PurchaseInfoItem>
+            <PurchaseInfoLabel>내 포인트</PurchaseInfoLabel>
+            <PurchaseInfoValue>{purchaseData?.userPoints}p</PurchaseInfoValue>
+          </PurchaseInfoItem>
+        </PurchaseInfoWrapper>
+        <ModalText
+          style={{ color: "#ff4444", fontWeight: "bold", textAlign: "center" }}
+        >
+          포인트가 부족합니다
+        </ModalText>
+        <ModalButtonGroup>
+          <ModalActionButton
+            onClick={() => setIsInsufficientPointsModalOpen(false)}
+            variant="primary"
+          >
+            닫기
           </ModalActionButton>
         </ModalButtonGroup>
       </Modal>
@@ -247,20 +403,27 @@ const AuthorName = styled.p`
 const PointWrapper = styled.div`
   display: flex;
   align-items: center;
+  justify-content: space-between;
   margin-bottom: 0.625rem;
-  gap: 0.5rem;
+  margin-top: 1.5rem;
 `;
 
 const PointLabel = styled.span`
   font-size: 1rem;
   color: ${BDS.palette.pointblack};
-  font-weight: 500;
+
+  color: #333d4b;
 `;
 
 const PointValue = styled.span`
   font-size: 1rem;
   color: ${BDS.palette.pointblack};
   font-weight: 600;
+
+  &::before {
+    content: "💰 ";
+    margin-right: 0.25rem;
+  }
 `;
 
 const DateInfo = styled.p`
@@ -272,7 +435,7 @@ const DateInfo = styled.p`
 
 const SummaryWrapper = styled.div`
   flex: 0 1 auto;
-  margin-top: 1.875rem;
+  margin-top: 0.5rem;
   position: relative;
   border-radius: 0.5rem;
   text-align: left;
@@ -296,7 +459,7 @@ const SummaryContent = styled.p`
   margin-left: 0;
   color: #555;
   font-weight: 500;
-  max-height: 16rem;
+  max-height: 23.75rem;
   flex: 1;
 `;
 
@@ -329,28 +492,32 @@ const ReadButton = styled.button`
   }
 `;
 
-const BookContentWrapper = styled.div`
-  margin: 2rem 5rem;
-  padding: 2rem;
-  background-color: ${BDS.palette.white};
-  border-radius: 0.5rem;
-  box-shadow: 0 0 0.3125rem rgba(0, 0, 0, 0.1);
-`;
-
-const BookContentTitle = styled.h3`
-  color: ${BDS.palette.pointblack};
-  font-size: 1.5rem;
+const PurchaseInfoWrapper = styled.div`
   margin-bottom: 1.5rem;
-  border-bottom: 0.125rem solid #eee;
-  padding-bottom: 0.5rem;
 `;
 
-const BookContentText = styled.div`
-  white-space: pre-wrap;
-  line-height: 1.8;
-  font-size: 1rem;
+const PurchaseInfoItem = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 0.0625rem solid #f0f0f0;
+
+  &:last-child {
+    border-bottom: none;
+    font-weight: 600;
+  }
+`;
+
+const PurchaseInfoLabel = styled.span`
   color: ${BDS.palette.pointblack};
-  font-weight: 400;
+  font-size: 1rem;
+`;
+
+const PurchaseInfoValue = styled.span`
+  color: ${BDS.palette.pointblack};
+  font-size: 1rem;
+  font-weight: 600;
 `;
 
 const ModalText = styled.p`
