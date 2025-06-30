@@ -34,7 +34,7 @@ const HeaderContainer = styled.header`
   align-items: center;
   justify-content: center;
   background-color: #ffffff;
-  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  /* box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); */
   border-bottom: 0.0625rem solid #e9ecef;
   position: fixed;
   top: 0;

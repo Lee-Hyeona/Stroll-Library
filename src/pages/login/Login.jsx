@@ -32,7 +32,6 @@ function Login() {
     <Container>
       <FormContainer>
         <Title>로그인</Title>
-        <Subtitle>계정에 로그인하여 시작하세요</Subtitle>
 
         <Form onSubmit={handleSubmit}>
           <InputGroup>
@@ -63,7 +62,7 @@ function Login() {
         </Form>
 
         <RegisterBox>
-          아직 미회원이라면?{" "}
+          아직 비회원이라면?{" "}
           <RegisterLink onClick={() => navigate("/signup")}>
             회원가입하기
           </RegisterLink>
@@ -83,6 +82,7 @@ const Container = styled.div`
   justify-content: center;
   background-color: #ffffff;
   padding: 2rem 1rem;
+  text-align: left;
 `;
 
 const FormContainer = styled.div`
@@ -100,7 +100,7 @@ const Title = styled.h1`
   font-weight: 700;
   color: #101010;
   text-align: center;
-  margin-bottom: 0.5rem;
+  margin-bottom: 3rem;
 `;
 
 const Subtitle = styled.p`
@@ -128,7 +128,7 @@ const Label = styled.label`
 `;
 
 const Input = styled.input`
-  width: 100%;
+  width: calc(100% - 1.5rem);
   padding: 0.75rem;
   border: 0.0625rem solid #dee2e6;
   border-radius: 0.5rem;
