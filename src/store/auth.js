@@ -34,8 +34,8 @@ export const useAuthStore = create(
       (set, get) => ({
         // 상태
         accessToken: null,
-        isAuthenticated: true,
-        userInfo: true,
+        isAuthenticated: false,
+        userInfo: null,
         isLoading: false,
 
         // 액션들

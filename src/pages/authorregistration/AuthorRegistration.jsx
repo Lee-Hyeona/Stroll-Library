@@ -2,14 +2,19 @@ import React, { useState } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 import Modal from "../../components/common/Modal";
+import axios from "axios";
+import { useUserInfo } from "../../store/auth";
+import apiClient from "../../service/axios";
 
 function AuthorRegistration() {
   const navigate = useNavigate();
+  const userInfo = useUserInfo();
   const [form, setForm] = useState({
     authorName: "",
     authorIntro: "",
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -19,7 +24,7 @@ function AuthorRegistration() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!form.authorName || !form.authorIntro) {
@@ -27,11 +32,45 @@ function AuthorRegistration() {
       return;
     }
 
-    // 작가 신청 처리 로직 (실제로는 API 호출)
-    console.log("작가 신청 정보:", form);
+    if (!userInfo?.id) {
+      alert("로그인이 필요합니다.");
+      navigate("/login");
+      return;
+    }
 
-    // 신청 완료 모달 표시
-    setIsModalOpen(true);
+    setIsLoading(true);
+
+    try {
+      // API 요청 데이터 구성
+      const requestData = {
+        authorNickname: form.authorName,
+        authorsProfile: form.authorIntro,
+      };
+
+      // 작가 신청 API 호출
+      const response = await apiClient.post(
+        `/users/${userInfo.id}/apply`,
+        requestData
+      );
+
+      console.log("작가 신청 성공:", response.data);
+
+      // 신청 완료 모달 표시
+      setIsModalOpen(true);
+    } catch (error) {
+      console.error("작가 신청 중 오류가 발생했습니다:", error);
+
+      if (error.response?.status === 400) {
+        alert("이미 작가 신청이 완료되었거나 잘못된 요청입니다.");
+      } else if (error.response?.status === 401) {
+        alert("인증이 만료되었습니다. 다시 로그인해주세요.");
+        navigate("/login");
+      } else {
+        alert("작가 신청 중 오류가 발생했습니다. 다시 시도해주세요.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleGoHome = () => {
@@ -71,7 +110,9 @@ function AuthorRegistration() {
           required
         />
 
-        <SubmitButton type="submit">작가 신청하기</SubmitButton>
+        <SubmitButton type="submit" disabled={isLoading}>
+          {isLoading ? "신청 중..." : "작가 신청하기"}
+        </SubmitButton>
       </Form>
 
       <Modal

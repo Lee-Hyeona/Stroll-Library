@@ -1,27 +1,91 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "../../store/auth";
+import { getCurrentUser } from "../../service/api";
+import { getAccessToken } from "../../service/axios";
 
 function MyPage() {
   const navigate = useNavigate();
-  const { userInfo } = useAuthStore((state) => state);
-  const [form, setForm] = useState({
-    email: "",
-    nickname: "",
-    points: "",
-    isSubscribed: false,
-    authorStatus: "미인증",
-    subscriptionEndDate: null,
-  });
-  // 가상의 사용자 정보 (실제로는 API에서 가져와야 함)
-  //const [userInfo, setUserInfo] = useState({
-  //  name: "홍길동",
-  //  id: "hong123",
-  //  points: 15000,
-  //  isSubscribed: false,
-  //  authorStatus: "미인증", // "미인증", "승인 대기", "인증 완료"
-  //  subscriptionEndDate: null,
-  //});
+  const { userInfo, isAuthenticated, accessToken } = useAuthStore(
+    (state) => state
+  );
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [userData, setUserData] = useState(null);
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    // 컴포넌트가 언마운트되면 상태 업데이트 방지
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!isMounted.current) return;
+
+      try {
+        if (!isAuthenticated) {
+          if (isMounted.current) {
+            setError("로그인이 필요합니다.");
+            setLoading(false);
+          }
+          navigate("/login");
+          return;
+        }
+
+        if (userInfo && !userData) {
+          if (isMounted.current) {
+            console.log("Zustand에서 사용자 정보 먼저 설정:", userInfo);
+            setUserData(userInfo);
+            setLoading(false);
+          }
+        }
+
+        const response = await getCurrentUser();
+        console.log("getCurrentUser API 응답:", response);
+
+        if (!isMounted.current) return;
+
+        if (response.success) {
+          console.log("✅ 사용자 정보 성공적으로 가져옴:", response.data);
+          setUserData(response.data);
+          setError(null);
+        } else {
+          console.error("❌ API 호출 실패:", response);
+
+          if (!userInfo) {
+            setError(response.message || "사용자 정보를 불러올 수 없습니다.");
+          }
+
+          if (response.status === 401) {
+            console.log("토큰 만료, 로그인 페이지로 이동");
+            navigate("/login");
+          }
+        }
+      } catch (err) {
+        console.error("❌ 예외 발생:", err);
+        if (isMounted.current) {
+          if (!userInfo) {
+            setError("사용자 정보를 불러올 수 없습니다.");
+          }
+        }
+      } finally {
+        if (isMounted.current) {
+          setLoading(false);
+        }
+      }
+    };
+
+    if (isAuthenticated) {
+      fetchUserData();
+    } else {
+      setLoading(false);
+      setError("로그인이 필요합니다.");
+    }
+  }, [isAuthenticated, userInfo, userData, navigate]);
 
   const handleSubscribe = () => {
     navigate("/subscription");
@@ -31,46 +95,103 @@ function MyPage() {
     navigate("/author/register");
   };
 
+  // 로딩 중일 때만 로딩 화면 표시
+  if (loading && !userData) {
+    return (
+      <Container>
+        <Title>마이페이지</Title>
+        <LoadingMessage>로딩 중...</LoadingMessage>
+      </Container>
+    );
+  }
+
+  // 에러가 있고 사용자 데이터가 없는 경우에만 에러 화면 표시
+  if (error && !userData) {
+    return (
+      <Container>
+        <Title>마이페이지</Title>
+        <ErrorMessage>{error}</ErrorMessage>
+        <ActionButton onClick={() => navigate("/login")}>
+          로그인 페이지로
+        </ActionButton>
+      </Container>
+    );
+  }
+
+  // 데이터가 없는 경우
+  if (!userData) {
+    return (
+      <Container>
+        <Title>마이페이지</Title>
+        <ErrorMessage>사용자 정보가 없습니다.</ErrorMessage>
+        <ActionButton onClick={() => navigate("/login")}>
+          로그인 페이지로
+        </ActionButton>
+      </Container>
+    );
+  }
+
+  // 작가 상태 확인 - authorshipStatus 속성 사용
+  const authorshipStatus = userData?.authorshipStatus || "DEFAULT";
+
   return (
     <Container>
       <Title>마이페이지</Title>
+      {error && (
+        <ErrorMessage style={{ marginBottom: "1rem", fontSize: "0.9rem" }}>
+          ⚠️ 일부 정보를 업데이트하지 못했습니다.
+        </ErrorMessage>
+      )}
       <Section>
         <Row>
-          <Label>이름</Label>
-          <Value>{userInfo.name}</Value>
+          <Label>닉네임</Label>
+          <Value>{userData?.nickname || "정보 없음"}</Value>
         </Row>
 
         <Row>
-          <Label>아이디</Label>
-          <Value>{userInfo.id}</Value>
-        </Row>
-
-        <Row>
-          <Label>보유 포인트</Label>
-          <Value>{userInfo.points.toLocaleString()}P</Value>
+          <Label>계정 ID</Label>
+          <Value>{userData?.accountId || "정보 없음"}</Value>
         </Row>
 
         <Label>구독 정보</Label>
         <Row>
-          <Value>
-            {userInfo.isSubscribed
-              ? `구독중 (${userInfo.subscriptionEndDate || "만료일 미정"})`
-              : "미구독"}
-          </Value>
-          {!userInfo.isSubscribed && (
+          <Value>{userData?.subscriber ? "구독 중" : "미구독"}</Value>
+          {!userData?.subscriber && (
             <ActionButton onClick={handleSubscribe}>구독하기</ActionButton>
           )}
         </Row>
 
-        <Label>작가 인증</Label>
+        <Label>작가 인증 상태</Label>
         <Row>
-          <Value>{userInfo.authorStatus}</Value>
-          {userInfo.authorStatus === "미인증" && (
+          <Value>
+            {authorshipStatus === "DEFAULT" && "미신청"}
+            {authorshipStatus === "PENDING" && "승인 대기"}
+            {authorshipStatus === "ACCEPTED" && "인증 완료"}
+          </Value>
+          {authorshipStatus === "DEFAULT" && (
             <ActionButton onClick={handleAuthorRegister}>
               작가 등록하기
             </ActionButton>
           )}
+          {authorshipStatus === "PENDING" && <Value>승인 대기 중</Value>}
+          {authorshipStatus === "ACCEPTED" && <Value>인증 완료</Value>}
         </Row>
+
+        {authorshipStatus === "ACCEPTED" && userData?.authorNickname && (
+          <Row>
+            <Label>작가명</Label>
+            <Value>{userData.authorNickname}</Value>
+          </Row>
+        )}
+
+        {authorshipStatus === "ACCEPTED" && userData?.authorsProfile && (
+          <>
+            <Label>작가 소개</Label>
+            <AuthorProfileContainer>
+              <AuthorProfile>{userData.authorsProfile}</AuthorProfile>
+            </AuthorProfileContainer>
+          </>
+        )}
       </Section>
     </Container>
   );
@@ -145,4 +266,34 @@ const ActionButton = styled.button`
   &:hover {
     background-color: #333;
   }
+`;
+
+const LoadingMessage = styled.div`
+  text-align: center;
+  font-size: 1rem;
+  color: #666;
+  margin-top: 2rem;
+`;
+
+const ErrorMessage = styled.div`
+  text-align: center;
+  font-size: 1rem;
+  color: #dc3545;
+  margin-top: 2rem;
+`;
+
+const AuthorProfileContainer = styled.div`
+  width: 100%;
+  margin-bottom: 1rem;
+`;
+
+const AuthorProfile = styled.div`
+  font-size: 0.95rem;
+  line-height: 1.5;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  color: #495057;
+  white-space: pre-wrap;
 `;

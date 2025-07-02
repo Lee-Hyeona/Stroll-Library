@@ -124,36 +124,32 @@ function BookPublish() {
   };
 
   // 출간 신청 핸들러
-  const handlePublishRequest = () => {
+  const handlePublishRequest = async () => {
     if (!aiData) {
       alert("AI 데이터가 준비되지 않았습니다.");
       return;
     }
 
     if (window.confirm("정말로 출간 신청하시겠습니까?")) {
-      // 출간된 책 목록에 추가 (localStorage 사용)
-      const publishedBooks = JSON.parse(
-        localStorage.getItem("publishedBooks") || "[]"
-      );
+      try {
+        const requestData = {
+          summary: aiData.summary,
+        };
 
-      const newBook = {
-        id: aiData.id || Date.now(),
-        title: `Draft ${draftId}`, // 실제로는 원본 제목을 가져와야 하지만 지시사항에 따라 단순화
-        author: "작가명", // 실제로는 현재 사용자 정보
-        categoryName: aiData.category,
-        createDate: new Date().toISOString(),
-        updateDate: new Date().toISOString(),
-        coverImgUrl: aiData.coverImageUrl,
-        price: aiData.price,
-        summary: aiData.summary,
-        isBestseller: false,
-      };
+        const response = await apiClient.post(
+          `/ai/${draftId}/complete`,
+          requestData
+        );
 
-      publishedBooks.push(newBook);
-      localStorage.setItem("publishedBooks", JSON.stringify(publishedBooks));
-
-      alert("출간 신청이 완료되었습니다!");
-      navigate("/");
+        // 201 응답 확인
+        if (response.status === 200) {
+          alert("출간 신청이 완료되었습니다!");
+          navigate("/");
+        }
+      } catch (error) {
+        console.error("출간 신청 실패:", error);
+        alert("출간 신청에 실패했습니다. 다시 시도해주세요.");
+      }
     }
   };
 
@@ -169,7 +165,6 @@ function BookPublish() {
       ) : (
         <ContentWrapper>
           <Section>
-            <SectionTitle>카테고리</SectionTitle>
             <CategoryText>{aiData.category}</CategoryText>
           </Section>
 

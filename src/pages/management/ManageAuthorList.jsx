@@ -32,8 +32,8 @@ const ManageAuthorList = () => {
       const response = await apiClient.get("/admin/requests");
 
       const authorRequests = response.data.map((request) => ({
-        id: request.id,
-        userId: request.accoundId,
+        id: request.userId,
+        user: request.accountId,
         authorName: request.authorNickname,
         // status: request.status,
       }));
@@ -47,8 +47,8 @@ const ManageAuthorList = () => {
     }
   };
 
-  const handleViewDetail = (userId) => {
-    navigate(`/admin/authors/${userId}`);
+  const handleViewDetail = (id) => {
+    navigate(`/admin/authors/${id}`);
   };
 
   if (isLoading) {
@@ -89,15 +89,15 @@ const ManageAuthorList = () => {
               </TableHeader>
               <TableBody>
                 {authorApplications.map((application) => (
-                  <ApplicationRow key={application.userId}>
-                    <TableCell align="center">{application.userId}</TableCell>
+                  <ApplicationRow key={application.user}>
+                    <TableCell align="center">{application.user}</TableCell>
                     <TableCell align="center">
                       {application.authorName}
                     </TableCell>
                     <TableCell align="center"></TableCell>
                     <TableCell align="center">
                       <ViewButton
-                        onClick={() => handleViewDetail(application.userId)}
+                        onClick={() => handleViewDetail(application.id)}
                       >
                         확인
                       </ViewButton>

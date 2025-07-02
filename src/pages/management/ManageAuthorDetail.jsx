@@ -5,6 +5,7 @@ import { BDS } from "../../styles/BDS";
 import Modal from "../../components/common/Modal";
 import AdminHeader from "../../components/common/Header/AdminHeader";
 import apiClient from "../../service/axios";
+import { useUserInfo } from "../../store/auth";
 
 const ManageAuthorDetail = () => {
   const [applicationData, setApplicationData] = useState(null);
@@ -14,6 +15,7 @@ const ManageAuthorDetail = () => {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
   const { userId } = useParams();
+  const userInfo = useUserInfo();
 
   useEffect(() => {
     // 관리자 권한 확인
@@ -29,15 +31,25 @@ const ManageAuthorDetail = () => {
         setError(null);
 
         const response = await apiClient.get(`/admin/requests/${userId}`);
+        console.log(response.data); // 응답 데이터 구조 확인
 
-        const authorRequests = response.data.map((request) => ({
-          id: request.id,
-          userId: request.accoundId,
-          authorName: request.authorNickname,
-          introduction: request.authorProfile,
-        }));
+        // response.data가 배열인지 객체인지 확인
+        const authorRequest = Array.isArray(response.data)
+          ? response.data.find((request) => request.userId === parseInt(userId))
+          : response.data.userId === parseInt(userId)
+          ? response.data
+          : null;
 
-        setApplicationData(authorRequests);
+        if (authorRequest) {
+          setApplicationData({
+            id: authorRequest.userId,
+            user: authorRequest.accountId,
+            authorName: authorRequest.authorNickname,
+            introduction: authorRequest.authorProfile,
+          });
+        } else {
+          setError("신청 정보를 찾을 수 없습니다");
+        }
       } catch (error) {
         console.error("작가 신청 정보 조회 실패:", error);
         setError("작가 신청 정보를 불러오는 중 오류가 발생했습니다.");
@@ -56,8 +68,7 @@ const ManageAuthorDetail = () => {
   const handleApprove = async () => {
     try {
       const requestData = {
-        userId: 1,
-        //userId: userInfo.id,
+        userId: userId,
       };
       setIsProcessing(true);
 
@@ -119,7 +130,7 @@ const ManageAuthorDetail = () => {
           <ApplicationInfo>
             <InfoRow>
               <InfoLabel>유저 아이디</InfoLabel>
-              <InfoValue>{applicationData.userId}</InfoValue>
+              <InfoValue>{applicationData.user}</InfoValue>
             </InfoRow>
 
             <InfoRow>

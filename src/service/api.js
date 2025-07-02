@@ -157,13 +157,13 @@ export const del = async (url, config = {}) => {
 /**
  * 회원가입
  * @param {Object} credentials - 로그인 정보
- * @param {string} credentials.email - 아이디
+ * @param {string} credentials.accountId - 아이디
  * @param {string} credentials.password - 비밀번호
  * @returns {Promise<ApiResponse>} - 로그인 응답
  */
 export const signup = async (signupData) => {
   try {
-    const response = await post("/users/register", signupData);
+    const response = await post("/auth/register", signupData);
 
     if (response?.data) {
       return formatSuccessResponse(response.data, "회원가입에 성공했습니다.");
@@ -178,7 +178,7 @@ export const signup = async (signupData) => {
 /**
  * 로그인
  * @param {Object} credentials - 로그인 정보
- * @param {string} credentials.email - 아이디
+ * @param {string} credentials.accountId - 아이디
  * @param {string} credentials.password - 비밀번호
  * @returns {Promise<ApiResponse>} - 로그인 응답
  */
@@ -235,7 +235,7 @@ export const logout = async () => {
  */
 export const getCurrentUser = async () => {
   try {
-    return await get("/users/me");
+    return await get("/view/me");
   } catch (error) {
     return handleApiError(error);
   }

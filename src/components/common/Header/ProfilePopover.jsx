@@ -1,11 +1,13 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import styled from "styled-components";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { BDS } from "../../../styles/BDS";
+import { logout } from "../../../service/api";
 
 function ProfilePopover({ setPopoverOpen, profile, triggerRect }) {
   const navigate = useNavigate();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // 메뉴 항목 클릭 핸들러
   const handleMenuClick = (path) => {
@@ -14,11 +16,32 @@ function ProfilePopover({ setPopoverOpen, profile, triggerRect }) {
   };
 
   // 로그아웃 핸들러
-  const handleLogout = () => {
-    setPopoverOpen(false);
-    // 실제로는 로그아웃 API 호출 및 상태 초기화 로직 필요
-    console.log("로그아웃");
-    navigate("/login");
+  const handleLogout = async () => {
+    if (isLoggingOut) return; // 중복 요청 방지
+
+    try {
+      setIsLoggingOut(true);
+      setPopoverOpen(false);
+
+      // 실제 로그아웃 API 호출
+      const response = await logout();
+
+      if (response.success) {
+        console.log("로그아웃 성공:", response.message);
+        // 메인 페이지로 리다이렉트
+        navigate("/", { replace: true });
+      } else {
+        console.error("로그아웃 실패:", response.message);
+        // 실패해도 로그인 페이지로 이동
+        navigate("/login", { replace: true });
+      }
+    } catch (error) {
+      console.error("로그아웃 중 오류 발생:", error);
+      // 에러가 발생해도 로그인 페이지로 이동
+      navigate("/login", { replace: true });
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   // 작가용 메뉴 항목
@@ -26,21 +49,22 @@ function ProfilePopover({ setPopoverOpen, profile, triggerRect }) {
     { label: "계정 정보", path: "/account" },
     { label: "글쓰기", path: "/write" },
     { label: "글 임시 저장 목록", path: "/drafts" },
-    { label: "출간된 책", path: "/published-books" },
-    { label: "최근 본 책", path: "/recent-books" },
-    { label: "구매 목록", path: "/purchase-history" },
-    { label: "구독 하기", path: "/subscription" },
+    // { label: "출간된 책", path: "/published-books" },
+    // { label: "최근 본 책", path: "/recent-books" },
+    // { label: "구매 목록", path: "/purchase-history" },
+    // { label: "구독 하기", path: "/subscription" },
   ];
 
   // 일반 사용자용 메뉴 항목
   const userMenuItems = [
     { label: "계정 정보", path: "/account" },
-    { label: "최근 본 책", path: "/recent-books" },
-    { label: "구매 목록", path: "/purchase-history" },
-    { label: "구독 하기", path: "/subscription" },
+    // { label: "최근 본 책", path: "/recent-books" },
+    // { label: "구매 목록", path: "/purchase-history" },
+    // { label: "구독 하기", path: "/subscription" },
   ];
 
-  const menuItems = profile?.is_author ? authorMenuItems : userMenuItems;
+  const menuItems =
+    profile?.authorshipStatus === "ACCEPTED" ? authorMenuItems : userMenuItems;
 
   return createPortal(
     <>
@@ -52,14 +76,14 @@ function ProfilePopover({ setPopoverOpen, profile, triggerRect }) {
         }}
       >
         <UserInfo>
-          {profile?.is_author ? (
+          {profile?.authorshipStatus === "ACCEPTED" ? (
             <UserNameWithBadge>
-              <UserName>{profile?.name}</UserName>
+              <UserName>{profile?.nickname}</UserName>
               <AuthorBadge>작가</AuthorBadge>
             </UserNameWithBadge>
           ) : (
             <UserNameWithBadge>
-              <UserName>{profile?.name}</UserName>
+              <UserName>{profile?.nickname}</UserName>
             </UserNameWithBadge>
           )}
         </UserInfo>
@@ -72,8 +96,8 @@ function ProfilePopover({ setPopoverOpen, profile, triggerRect }) {
               {item.label}
             </MenuItem>
           ))}
-          <MenuItem onClick={handleLogout} isLogout>
-            로그아웃
+          <MenuItem onClick={handleLogout} isLogout disabled={isLoggingOut}>
+            {isLoggingOut ? "로그아웃 중..." : "로그아웃"}
           </MenuItem>
         </MenuList>
       </ProfilePopoverContainer>
@@ -156,20 +180,31 @@ const MenuItem = styled.button`
   padding: 0.75rem 0.5rem;
   font-size: 0.9rem;
   font-weight: 500;
-  color: ${({ isLogout }) => (isLogout ? "#dc3545" : BDS.palette.pointblack)};
+  color: ${({ isLogout, disabled }) =>
+    disabled ? "#999" : isLogout ? "#dc3545" : BDS.palette.pointblack};
   background-color: transparent;
   border: none;
   border-radius: 0.375rem;
-  cursor: pointer;
+  cursor: ${({ disabled }) => (disabled ? "not-allowed" : "pointer")};
   text-align: left;
   transition: all 0.2s ease;
+  opacity: ${({ disabled }) => (disabled ? 0.6 : 1)};
 
   &:hover {
-    background-color: ${({ isLogout }) =>
-      isLogout ? "rgba(220, 53, 69, 0.1)" : "#f8f9fa"};
+    background-color: ${({ isLogout, disabled }) =>
+      disabled
+        ? "transparent"
+        : isLogout
+        ? "rgba(220, 53, 69, 0.1)"
+        : "#f8f9fa"};
   }
 
   &:active {
-    transform: translateY(0.0625rem);
+    transform: ${({ disabled }) =>
+      disabled ? "none" : "translateY(0.0625rem)"};
+  }
+
+  &:disabled {
+    cursor: not-allowed;
   }
 `;

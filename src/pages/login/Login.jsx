@@ -38,7 +38,7 @@ function Login() {
       // API 호출 - Login.jsx의 현재 폼 구조(email, password)를 그대로 사용
       // const response = { data: { name: "test" }, success: true };
       const response = await login({
-        email: form.email,
+        accountId: form.accountId,
         password: form.password,
       });
 
@@ -69,7 +69,7 @@ function Login() {
             <Label>아이디</Label>
             <Input
               type="text"
-              name="email"
+              name="accountId"
               value={form.accountId}
               onChange={handleChange}
               placeholder="아이디를 입력하세요"

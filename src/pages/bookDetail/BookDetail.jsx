@@ -129,8 +129,8 @@ const BookDetailPage = () => {
     console.log(userInfo);
     const res = apiClient
       .get(
-        `/view/1/accesstocontent?productId=${id}`
-        // `/view/${userInfo?.id}/accesstocontent?productId=${id}`
+        // `/view/1/accesstocontent?productId=${id}`
+        `/view/${userInfo?.id}/accesstocontent?productId=${id}`
       )
       .then((res) => {
         console.log(res);
@@ -182,8 +182,7 @@ const BookDetailPage = () => {
   const handlePurchase = async () => {
     setIsLoadingPurchase(true);
     const res = await apiClient
-      .get(`/userAccessProfiles/1/checkpurchaseability`)
-      // .get(`/userAccessProfiles/${userInfo?.id}/checkpurchaseability`)
+      .get(`/userAccessProfiles/${userInfo.id}/checkpurchaseability`)
       .then((res) => {
         setPurchaseData(res?.data);
       })
