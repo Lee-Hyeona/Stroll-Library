@@ -19,7 +19,7 @@ const Card = ({ book }) => {
         </div>
       </ThumbnailWrapper>
       <Meta>
-        <Category>{book.categoryName}</Category>
+        <Category>{book.category}</Category>
         <Title>{book.title}</Title>
         <Author>{book.authorNickname}</Author>
         <Date>{book.publishedAt.substring(0, 10)}</Date>

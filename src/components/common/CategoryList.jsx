@@ -1,46 +1,28 @@
 import React, { useEffect, useState } from "react";
 import { styled, css } from "styled-components";
-import axios from "axios";
 
 const categories = [
-  { key: "bestseller", name: "베스트 셀러" },
+  { key: "bestsellers", name: "베스트 셀러" },
   { key: "literature", name: "문학" },
   { key: "economy", name: "경제" },
-  { key: "selfImprovement", name: "자기 계발" },
-  { key: "lifeStyle", name: "라이프 스타일" },
-  { key: "etc", name: "기타" },
+  { key: "selfdevelopment", name: "자기 계발" },
+  { key: "lifestyle", name: "라이프 스타일" },
+  { key: "others", name: "기타" },
 ];
 
 const CategoryList = ({ selectedCategory, setSelectedCategory }) => {
-  const [categoryList, setCategoryList] = useState([]);
-  const fetchCategory = async () => {
-    const data = await axios
-      .get(import.meta.env.VITE_API_URL + "/api/categories")
-      .then((response) => {
-        // console.log(response.data);
-        setCategoryList(response.data);
-      })
-      .catch((err) => {
-        console.log(err);
-        setCategoryList([]);
-      });
-  };
-  useEffect(() => {
-    // console.log(selectedCategory);
-    // fetchCategory();
-  }, [selectedCategory]);
   return (
     <CategoryWrapper>
       {categories.map((category) => (
         <Category
           key={category.key}
-          id={category.name}
-          $selectedCategory={selectedCategory}
+          id={category.key}
+          $selectedCategory={selectedCategory?.key}
           onClick={() => {
-            if (selectedCategory === category.name) {
+            if (selectedCategory?.key === category?.key) {
               setSelectedCategory(null);
             } else {
-              setSelectedCategory(category.name);
+              setSelectedCategory(category);
             }
           }}
         >

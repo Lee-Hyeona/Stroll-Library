@@ -4,15 +4,24 @@ import { useNavigate } from "react-router-dom";
 
 function MyPage() {
   const navigate = useNavigate();
-  // 가상의 사용자 정보 (실제로는 API에서 가져와야 함)
-  const [userInfo, setUserInfo] = useState({
-    name: "홍길동",
-    id: "hong123",
-    points: 15000,
+  const { userInfo } = useAuthStore((state) => state);
+  const [form, setForm] = useState({
+    email: "",
+    nickname: "",
+    points: "",
     isSubscribed: false,
-    authorStatus: "미인증", // "미인증", "승인 대기", "인증 완료"
+    authorStatus: "미인증",
     subscriptionEndDate: null,
   });
+  // 가상의 사용자 정보 (실제로는 API에서 가져와야 함)
+  //const [userInfo, setUserInfo] = useState({
+  //  name: "홍길동",
+  //  id: "hong123",
+  //  points: 15000,
+  //  isSubscribed: false,
+  //  authorStatus: "미인증", // "미인증", "승인 대기", "인증 완료"
+  //  subscriptionEndDate: null,
+  //});
 
   const handleSubscribe = () => {
     navigate("/subscription");

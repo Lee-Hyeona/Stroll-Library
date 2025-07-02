@@ -3,10 +3,12 @@ import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { BDS } from "../../styles/BDS";
 import AdminHeader from "../../components/common/Header/AdminHeader";
+import apiClient from "../../service/axios";
 
 const ManageAuthorList = () => {
   const [authorApplications, setAuthorApplications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -17,38 +19,33 @@ const ManageAuthorList = () => {
       return;
     }
 
-    // 작가 신청 목록 불러오기 (임시 데이터)
-    setTimeout(() => {
-      const mockData = [
-        {
-          userId: "user001",
-          authorName: "김소설",
-          applicationDate: "2024-01-15",
-          status: "pending",
-        },
-        {
-          userId: "user002",
-          authorName: "이문학",
-          applicationDate: "2024-01-14",
-          status: "pending",
-        },
-        {
-          userId: "user003",
-          authorName: "박시인",
-          applicationDate: "2024-01-13",
-          status: "pending",
-        },
-        {
-          userId: "user004",
-          authorName: "최작가",
-          applicationDate: "2024-01-12",
-          status: "pending",
-        },
-      ];
-      setAuthorApplications(mockData);
-      setIsLoading(false);
-    }, 1000);
+    // 작가 신청 목록 불러오기
+    fetchAuthorApplications();
   }, [navigate]);
+
+  const fetchAuthorApplications = async () => {
+    try {
+      console.log("작가 신청 목록 조회 시도");
+      setIsLoading(true);
+      setError(null);
+
+      const response = await apiClient.get("/admin/requests");
+
+      const authorRequests = response.data.map((request) => ({
+        id: request.id,
+        userId: request.accoundId,
+        authorName: request.authorNickname,
+        // status: request.status,
+      }));
+
+      setAuthorApplications(authorRequests);
+    } catch (error) {
+      console.error("작가 신청 목록 조회 실패:", error);
+      setError("작가 신청 목록을 불러오는데 실패했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleViewDetail = (userId) => {
     navigate(`/admin/authors/${userId}`);
@@ -69,7 +66,7 @@ const ManageAuthorList = () => {
 
       <Content>
         <HeaderSection>
-          <Title>작가 신청 관리</Title>
+          <Title>작가 승인 관리</Title>
         </HeaderSection>
 
         <Section>
@@ -86,7 +83,7 @@ const ManageAuthorList = () => {
                 <HeaderRow>
                   <HeaderCell align="center">유저 아이디</HeaderCell>
                   <HeaderCell align="center">작가명</HeaderCell>
-                  <HeaderCell align="center">신청 날짜</HeaderCell>
+                  <HeaderCell align="center"></HeaderCell>
                   <HeaderCell align="center">관리</HeaderCell>
                 </HeaderRow>
               </TableHeader>
@@ -97,9 +94,7 @@ const ManageAuthorList = () => {
                     <TableCell align="center">
                       {application.authorName}
                     </TableCell>
-                    <TableCell align="center">
-                      {application.applicationDate}
-                    </TableCell>
+                    <TableCell align="center"></TableCell>
                     <TableCell align="center">
                       <ViewButton
                         onClick={() => handleViewDetail(application.userId)}

@@ -4,12 +4,14 @@ import styled from "styled-components";
 import { BDS } from "../../styles/BDS";
 import Modal from "../../components/common/Modal";
 import AdminHeader from "../../components/common/Header/AdminHeader";
+import apiClient from "../../service/axios";
 
 const ManageAuthorDetail = () => {
   const [applicationData, setApplicationData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
   const { userId } = useParams();
 
@@ -21,49 +23,30 @@ const ManageAuthorDetail = () => {
       return;
     }
 
-    // 작가 신청 상세 정보 불러오기 (임시 데이터)
-    setTimeout(() => {
-      const mockDetailData = {
-        user001: {
-          userId: "user001",
-          authorName: "김소설",
-          applicationDate: "2024-01-15",
-          introduction:
-            "안녕하세요. 저는 10년간 소설을 써온 김소설입니다.\n\n주로 현대 문학과 로맨스 장르를 다루며, 독자들과 깊이 있는 감정을 나누고 싶습니다. 제가 쓴 작품들이 많은 사람들에게 위로와 힐링이 되었으면 좋겠습니다.\n\n앞으로도 꾸준히 좋은 작품을 선보이겠습니다.",
-          status: "pending",
-        },
-        user002: {
-          userId: "user002",
-          authorName: "이문학",
-          applicationDate: "2024-01-14",
-          introduction:
-            "문학을 사랑하는 이문학입니다.\n\n대학에서 국어국문학을 전공했으며, 여러 문학 동아리에서 활동해왔습니다. 제가 추구하는 것은 일상 속에서 발견할 수 있는 작은 아름다움을 글로 표현하는 것입니다.\n\n독자들이 제 글을 통해 삶의 소중함을 느끼셨으면 합니다.",
-          status: "pending",
-        },
-        user003: {
-          userId: "user003",
-          authorName: "박시인",
-          applicationDate: "2024-01-13",
-          introduction:
-            "시와 산문을 쓰는 박시인입니다.\n\n자연과 인간의 관계, 그리고 현대 사회의 모순을 주제로 작품을 써왔습니다. 제 글이 독자들에게 잠깐의 사색 시간을 선사했으면 좋겠습니다.\n\n진정성 있는 작품으로 많은 분들과 만나고 싶습니다.",
-          status: "pending",
-        },
-        user004: {
-          userId: "user004",
-          authorName: "최작가",
-          applicationDate: "2024-01-12",
-          introduction:
-            "다양한 장르의 소설을 쓰는 최작가입니다.\n\n판타지부터 추리, 로맨스까지 폭넓은 장르에 도전하고 있습니다. 독자들이 지루할 틈 없이 몰입할 수 있는 스토리를 만드는 것이 제 목표입니다.\n\n재미있고 의미 있는 이야기로 독자들과 소통하겠습니다.",
-          status: "pending",
-        },
-      };
+    const fetchAuthorDetail = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
 
-      const data = mockDetailData[userId];
-      if (data) {
-        setApplicationData(data);
+        const response = await apiClient.get(`/admin/requests/${userId}`);
+
+        const authorRequests = response.data.map((request) => ({
+          id: request.id,
+          userId: request.accoundId,
+          authorName: request.authorNickname,
+          introduction: request.authorProfile,
+        }));
+
+        setApplicationData(authorRequests);
+      } catch (error) {
+        console.error("작가 신청 정보 조회 실패:", error);
+        setError("작가 신청 정보를 불러오는 중 오류가 발생했습니다.");
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
-    }, 800);
+    };
+
+    fetchAuthorDetail();
   }, [userId, navigate]);
 
   const handleCancel = () => {
@@ -71,16 +54,31 @@ const ManageAuthorDetail = () => {
   };
 
   const handleApprove = async () => {
-    setIsProcessing(true);
+    try {
+      const requestData = {
+        userId: 1,
+        //userId: userInfo.id,
+      };
+      setIsProcessing(true);
 
-    // 승인 처리 시뮬레이션
-    setTimeout(() => {
-      // 실제 환경에서는 서버에 승인 요청을 보냄
-      console.log(`작가 승인: ${applicationData.userId}`);
+      // 작가 승인 API 호출
+      const response = await apiClient.post(
+        `/admin/requests/${userId}/approve`,
+        requestData
+      );
 
+      // 성공 여부 체크 (선택)
+      if (response.status === 200) {
+        setShowSuccessModal(true);
+      } else {
+        throw new Error("승인 실패: 서버 응답 오류");
+      }
+    } catch (error) {
+      console.error("작가 승인 처리 실패:", error);
+      alert("작가 승인 처리 중 오류가 발생했습니다.");
+    } finally {
       setIsProcessing(false);
-      setShowSuccessModal(true);
-    }, 1000);
+    }
   };
 
   const handleSuccessModalClose = () => {
@@ -97,12 +95,12 @@ const ManageAuthorDetail = () => {
     );
   }
 
-  if (!applicationData) {
+  if (error || !applicationData) {
     return (
       <Container>
         <AdminHeader />
         <ErrorMessage>
-          <ErrorTitle>신청 정보를 찾을 수 없습니다</ErrorTitle>
+          <ErrorTitle>{error || "신청 정보를 찾을 수 없습니다"}</ErrorTitle>
           <BackButton onClick={handleCancel}>목록으로 돌아가기</BackButton>
         </ErrorMessage>
       </Container>
@@ -127,11 +125,6 @@ const ManageAuthorDetail = () => {
             <InfoRow>
               <InfoLabel>작가명</InfoLabel>
               <InfoValue>{applicationData.authorName}</InfoValue>
-            </InfoRow>
-
-            <InfoRow>
-              <InfoLabel>신청 일자</InfoLabel>
-              <InfoValue>{applicationData.applicationDate}</InfoValue>
             </InfoRow>
 
             <InfoRow>

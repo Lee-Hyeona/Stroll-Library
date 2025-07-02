@@ -1,36 +1,37 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
+import { useUserInfo } from "../../store/auth";
+import apiClient from "../../service/axios";
 
 function Subscription() {
   const navigate = useNavigate();
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
-  // 가상의 사용자 정보 (실제로는 전역 상태나 API에서 가져와야 함)
-  const [userInfo, setUserInfo] = useState({
-    isFirstTimeSubscriber: true, // 첫 구독 여부
-    hasActiveSubscription: false, // 현재 구독 상태
-  });
+  const userInfo = useUserInfo();
 
   const handleSubscribe = async () => {
+    if (!userInfo?.id) {
+      alert("사용자 정보를 찾을 수 없습니다. 로그인 후 다시 시도해주세요.");
+      return;
+    }
+
     setIsLoading(true);
 
-    // 실제 구현에서는 여기에 API 호출이 들어갑니다
     try {
-      // 가상의 API 호출 지연 시뮬레이션
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const response = await apiClient.post(`/users/${userInfo.id}/subscribe`);
 
       // 구독 완료 처리
       setIsSubscribed(true);
-      setUserInfo((prev) => ({
-        ...prev,
-        hasActiveSubscription: true,
-        isFirstTimeSubscriber: false,
-      }));
     } catch (error) {
       console.error("구독 처리 중 오류:", error);
-      alert("구독 처리 중 오류가 발생했습니다. 다시 시도해주세요.");
+
+      // 에러 메시지 처리
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "구독 처리 중 오류가 발생했습니다. 다시 시도해주세요.";
+      alert(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -81,23 +82,11 @@ function Subscription() {
 
         <PricingSection>
           <PricingCard>
-            {userInfo.isFirstTimeSubscriber && (
-              <FirstTimeBadge>첫 구독 특가!</FirstTimeBadge>
-            )}
             <PriceInfo>
-              {userInfo.isFirstTimeSubscriber ? (
-                <>
-                  <CurrentPrice>첫 달 무료</CurrentPrice>
-                  <RegularPrice>이후 월 9,900원</RegularPrice>
-                </>
-              ) : (
-                <CurrentPrice>월 9,900원</CurrentPrice>
-              )}
+              <CurrentPrice>월 9,900원</CurrentPrice>
             </PriceInfo>
             <PriceDescription>
-              {userInfo.isFirstTimeSubscriber
-                ? "첫 구독 회원이라면 첫 달은 무료! 이후에는 월 9,900원이 결제됩니다."
-                : "월 9,900원으로 모든 책을 자유롭게 읽으세요."}
+              월 9,900원으로 모든 책을 자유롭게 읽으세요.
             </PriceDescription>
           </PricingCard>
         </PricingSection>
@@ -188,19 +177,6 @@ const PricingCard = styled.div`
   position: relative;
 `;
 
-const FirstTimeBadge = styled.div`
-  position: absolute;
-  top: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #000;
-  color: white;
-  padding: 0.25rem 1rem;
-  border-radius: 20px;
-  font-size: 0.875rem;
-  font-weight: bold;
-`;
-
 const PriceInfo = styled.div`
   margin-bottom: 1rem;
 `;
@@ -210,11 +186,6 @@ const CurrentPrice = styled.div`
   font-weight: bold;
   color: #000;
   margin-bottom: 0.5rem;
-`;
-
-const RegularPrice = styled.div`
-  font-size: 1rem;
-  color: #666;
 `;
 
 const PriceDescription = styled.p`

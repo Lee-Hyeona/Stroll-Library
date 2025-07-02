@@ -12,12 +12,12 @@ const profile = {
 
 function Header() {
   const navigate = useNavigate();
-  // const [isLogin, setIsLogin] = useState(true);
+  const [isLogin, setIsLogin] = useState(true);
   const { userInfo } = useAuthStore((state) => state);
   return (
     <HeaderContainer>
       <Link to="/">
-        <Logo src="/logo/logo.svg" alt="Book Management System" />
+        <Logo src="/logo/logo.svg" alt="Stoll Library" />
       </Link>
 
       {/* {isLogin ? ( */}

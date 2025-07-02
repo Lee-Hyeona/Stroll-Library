@@ -1,26 +1,43 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
+import axios from "axios";
+import { useUserInfo } from "../../store/auth";
+import apiClient from "../../service/axios";
 
 function WriteBook() {
   const navigate = useNavigate();
   const location = useLocation();
+  const userInfo = useUserInfo();
+  const { draftId } = useParams();
+
   const [form, setForm] = useState({
     title: "",
     content: "",
+    authorId: "",
   });
 
   // 편집 모드인지 확인 (임시 저장된 글을 편집하는 경우)
-  const editingDraft = location.state?.draft;
+  const isEditing = draftId ? true : false;
 
-  useEffect(() => {
-    if (editingDraft) {
+  const getDraftAndProcess = async () => {
+    const res = await apiClient.get(`/draft/${draftId}`);
+    // console.log(res);
+    if (res.status === 200) {
+      console.log(res);
       setForm({
-        title: editingDraft.title,
-        content: editingDraft.content,
+        title: res.data.title,
+        content: res.data.content,
+        authorId: userInfo?.id,
       });
     }
-  }, [editingDraft]);
+  };
+
+  useEffect(() => {
+    if (isEditing) {
+      getDraftAndProcess();
+    }
+  }, [draftId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -30,65 +47,80 @@ function WriteBook() {
     });
   };
 
-  const handleTempSave = () => {
+  const handleTempSave = async () => {
     if (!form.title.trim() || !form.content.trim()) {
       alert("제목과 내용을 모두 입력해주세요.");
       return;
     }
 
-    // 기존 임시 저장 목록 가져오기
-    const existingDrafts = JSON.parse(localStorage.getItem("drafts") || "[]");
+    // if (!userInfo?.id) {
+    //   alert("로그인이 필요합니다.");
+    //   return;
+    // }
 
-    const newDraft = {
-      id: editingDraft ? editingDraft.id : Date.now(), // 편집 중이면 기존 ID 사용, 아니면 새 ID 생성
-      title: form.title,
-      content: form.content,
-      savedAt: new Date().toISOString(),
-    };
+    try {
+      const requestData = {
+        title: form.title,
+        authorId: 1,
+        // authorId: userInfo.id,
+        content: form.content,
+      };
 
-    let updatedDrafts;
-    if (editingDraft) {
-      // 기존 임시 저장 글 업데이트
-      updatedDrafts = existingDrafts.map((draft) =>
-        draft.id === editingDraft.id ? newDraft : draft
-      );
-    } else {
-      // 새로운 임시 저장 글 추가
-      updatedDrafts = [...existingDrafts, newDraft];
+      if (isEditing) {
+        // 편집 모드: 기존 임시 저장 업데이트
+        await apiClient.put(`/draft/${draftId}`, requestData);
+      } else {
+        // 새 글 모드: 새로운 임시 저장 생성
+        await apiClient.post(`/draft/savedraft`, requestData);
+      }
+
+      alert("임시 저장되었습니다.");
+      navigate("/drafts");
+    } catch (error) {
+      console.error("임시 저장 에러:", error);
+      alert("임시 저장 중 오류가 발생했습니다. 다시 시도해주세요.");
     }
-
-    localStorage.setItem("drafts", JSON.stringify(updatedDrafts));
-    alert("임시 저장되었습니다.");
-    navigate("/drafts");
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.title.trim() || !form.content.trim()) {
       alert("제목과 내용을 모두 입력해주세요.");
       return;
     }
-
-    // BookPublish 페이지로 이동하면서 데이터 전달
-    navigate("/publish", {
-      state: {
-        bookData: {
-          title: form.title,
-          content: form.content,
-        },
-      },
-    });
+    const requestData = {
+      title: form.title,
+      authorId: 1,
+      // authorId: userInfo.id,
+      content: form.content,
+    };
+    try {
+      if (isEditing) {
+        const res = await apiClient.post(
+          `/draft/${draftId}/publish`,
+          requestData
+        );
+        navigate(`/publish/${res.data.id}`);
+      } else {
+        const res = await apiClient.post(`/draft/publish`, requestData);
+        navigate(`/publish/${res.data.id}`);
+      }
+    } catch (error) {
+      console.error("저장 에러:", error);
+      alert("저장 중 오류가 발생했습니다. 다시 시도해주세요.");
+    }
   };
 
   return (
     <Container>
       <Form>
-        <Title>{editingDraft ? "글 편집하기" : "글 쓰기"}</Title>
+        <Title>{isEditing ? "글 편집하기" : "글 쓰기"}</Title>
 
         <Label>제목</Label>
         <TitleInput
           type="text"
           name="title"
           value={form.title}
+          defaultValue={form.title}
           onChange={handleChange}
           placeholder="책의 제목을 입력해주세요"
           required
@@ -98,6 +130,7 @@ function WriteBook() {
         <ContentTextarea
           name="content"
           value={form.content}
+          defaultValue={form.content}
           onChange={handleChange}
           placeholder="책의 내용을 입력해주세요"
           required

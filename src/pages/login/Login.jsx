@@ -1,13 +1,16 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
+import { login } from "../../service/api";
 
 function Login() {
   const navigate = useNavigate();
   const [form, setForm] = useState({
-    username: "",
+    accountId: "",
     password: "",
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -15,17 +18,45 @@ function Login() {
       ...form,
       [name]: value,
     });
+    // 입력 시 에러 메시지 초기화
+    if (error) setError("");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // 실제 로그인 로직은 여기에 추가
-    if (!form.username || !form.password) {
-      alert("아이디와 비밀번호를 모두 입력해주세요.");
+
+    // 유효성 검사
+    if (!form.accountId || !form.password) {
+      setError("아이디와 비밀번호를 모두 입력해주세요.");
       return;
     }
-    alert("환영합니다✨");
-    navigate("/"); // 로그인 후 이동할 페이지
+
+    setIsLoading(true);
+    setError("");
+
+    try {
+      // API 호출 - Login.jsx의 현재 폼 구조(email, password)를 그대로 사용
+      // const response = { data: { name: "test" }, success: true };
+      const response = await login({
+        email: form.email,
+        password: form.password,
+      });
+
+      if (response.success) {
+        alert("환영합니다✨");
+        // 로그인 성공
+        console.log("로그인 성공:", response.data);
+        navigate("/"); // 메인 페이지로 이동
+      } else {
+        // 로그인 실패
+        setError(response.message || "로그인에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error("로그인 에러:", error);
+      setError("로그인 중 오류가 발생했습니다. 다시 시도해주세요.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -38,11 +69,12 @@ function Login() {
             <Label>아이디</Label>
             <Input
               type="text"
-              name="username"
-              value={form.username}
+              name="email"
+              value={form.accountId}
               onChange={handleChange}
               placeholder="아이디를 입력하세요"
               required
+              disabled={isLoading}
             />
           </InputGroup>
 
@@ -55,10 +87,16 @@ function Login() {
               onChange={handleChange}
               placeholder="비밀번호를 입력하세요"
               required
+              disabled={isLoading}
             />
           </InputGroup>
 
-          <SubmitButton type="submit">로그인</SubmitButton>
+          {/* 에러 메시지 표시 */}
+          {error && <ErrorMessage>{error}</ErrorMessage>}
+
+          <SubmitButton type="submit" disabled={isLoading}>
+            {isLoading ? "로그인 중..." : "로그인"}
+          </SubmitButton>
         </Form>
 
         <RegisterBox>
@@ -146,6 +184,23 @@ const Input = styled.input`
   &::placeholder {
     color: #adb5bd;
   }
+
+  &:disabled {
+    background-color: #f8f9fa;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+`;
+
+const ErrorMessage = styled.div`
+  color: #dc3545;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 0.375rem;
+  text-align: center;
 `;
 
 const SubmitButton = styled.button`
@@ -161,12 +216,18 @@ const SubmitButton = styled.button`
   transition: background-color 0.2s ease;
   margin-bottom: 1.5rem;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background-color: #333333;
   }
 
-  &:active {
+  &:active:not(:disabled) {
     background-color: #000000;
+  }
+
+  &:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
   }
 `;
 

@@ -1,20 +1,52 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { useUserInfo } from "../../store/auth";
+import apiClient from "../../service/axios";
 
 function MyWritings() {
   const navigate = useNavigate();
+  const userInfo = useUserInfo();
   const [drafts, setDrafts] = useState([]);
 
   useEffect(() => {
-    // localStorage에서 임시 저장된 글 목록 가져오기
-    const savedDrafts = JSON.parse(localStorage.getItem("drafts") || "[]");
-    // 최신 순으로 정렬
-    const sortedDrafts = savedDrafts.sort(
-      (a, b) => new Date(b.savedAt) - new Date(a.savedAt)
-    );
-    setDrafts(sortedDrafts);
+    fetchDrafts();
   }, []);
+
+  const fetchDrafts = async () => {
+    // if (!userInfo?.id) {
+    //   console.error("사용자 정보가 없습니다.");
+    //   return;
+    // }
+
+    try {
+      const response = await apiClient.get(`/draft/author/1`);
+      // const response = await apiClient.get(`/draft/author/${userInfo.id}`);
+
+      // API 응답을 기존 형식에 맞게 변환
+      const transformedDrafts = response.data.map((draft) => ({
+        id: draft.id,
+        title: draft.title,
+        content: draft.content,
+        savedAt: draft.createdAt, // createdAt을 savedAt으로 매핑
+        authorId: draft.authorId,
+        authorNickname: draft.authorNickname,
+      }));
+
+      // 최신 순으로 정렬
+      const sortedDrafts = transformedDrafts.sort(
+        (a, b) => new Date(b.savedAt) - new Date(a.savedAt)
+      );
+      setDrafts(sortedDrafts);
+    } catch (err) {
+      console.error(
+        "임시 저장 목록을 불러오는 중 오류가 발생했습니다. 다시 시도해 주세요.:",
+        err
+      );
+      setDrafts([]);
+    }
+  };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -38,21 +70,28 @@ function MyWritings() {
   };
 
   const handleDraftClick = (draft) => {
-    navigate("/write", {
-      state: { draft },
-    });
+    navigate(`/write/${draft.id}`);
   };
 
   const handleNewWrite = () => {
     navigate("/write");
   };
 
-  const handleDeleteDraft = (e, draftId) => {
+  const handleDeleteDraft = async (e, draftId) => {
     e.stopPropagation(); // 부모 클릭 이벤트 방지
     if (window.confirm("정말로 삭제하시겠습니까?")) {
-      const updatedDrafts = drafts.filter((draft) => draft.id !== draftId);
-      setDrafts(updatedDrafts);
-      localStorage.setItem("drafts", JSON.stringify(updatedDrafts));
+      try {
+        let url = import.meta.env.VITE_API_BASE_URL;
+        url += `/draft/${draftId}`;
+        await axios.delete(url);
+
+        // 삭제 성공 시 로컬 상태에서도 제거
+        const updatedDrafts = drafts.filter((draft) => draft.id !== draftId);
+        setDrafts(updatedDrafts);
+      } catch (error) {
+        console.error("임시 저장 글 삭제 중 오류가 발생했습니다:", error);
+        alert("삭제 중 오류가 발생했습니다. 다시 시도해주세요.");
+      }
     }
   };
 

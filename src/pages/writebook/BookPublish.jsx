@@ -1,110 +1,152 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import apiClient from "../../service/axios";
 
 function BookPublish() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const bookData = location.state?.bookData;
+  const { draftId } = useParams();
 
-  const [publishData, setPublishData] = useState({
-    title: "",
-    content: "",
-    category: "",
-    expectedPoints: 0,
-    summary: "",
-    coverImage: "",
-    coverModification: "",
-  });
+  // 상태 관리 - 단순화
+  const [isLoading, setIsLoading] = useState(true);
+  const [aiData, setAiData] = useState(null);
 
-  const [isGenerating, setIsGenerating] = useState(true);
+  // 표지 재생성 관련 상태
+  const [coverModification, setCoverModification] = useState("");
   const [isRegeneratingCover, setIsRegeneratingCover] = useState(false);
 
-  // 카테고리 옵션
-  const categories = ["문학", "경제", "자기계발", "라이프스타일", "기타"];
-
+  // AI 데이터 폴링 (1초마다)
   useEffect(() => {
-    if (!bookData) {
+    if (!draftId) {
       alert("잘못된 접근입니다.");
       navigate("/write");
       return;
     }
 
-    // AI API 호출 시뮬레이션
-    generateBookData();
-  }, [bookData]);
+    const pollAiData = async () => {
+      try {
+        const response = await apiClient.get(`/ai/${draftId}`);
+        console.log("AI 데이터 응답:", response.data);
 
-  const generateBookData = async () => {
-    setIsGenerating(true);
+        // API 성공시 데이터 설정하고 로딩 종료
+        setAiData(response.data);
+        setIsLoading(false);
+      } catch (error) {
+        // 실패시 계속 로딩 상태 유지 (1초 후 재시도)
+        console.error("AI 데이터 로딩 실패:", error);
+      }
+    };
 
-    // AI API 호출 시뮬레이션 (실제로는 실제 API 호출)
-    setTimeout(() => {
-      const aiGeneratedData = {
-        title: bookData.title,
-        content: bookData.content,
-        category: categories[Math.floor(Math.random() * categories.length)], // AI가 분류
-        expectedPoints: Math.floor(Math.random() * 2000) + 500, // AI가 산정 (500-2500)
-        summary: `이 책은 "${bookData.title}"라는 제목으로, 독자들에게 깊은 감동과 인사이트를 전달하는 작품입니다. 작가는 세심한 관찰력과 뛰어난 표현력으로 인간의 내면을 섬세하게 그려내었으며, 현대 사회의 복잡한 문제들을 새로운 시각으로 조명합니다. 책의 내용은 일상에서 마주하는 다양한 상황들을 통해 삶의 의미를 찾아가는 여정을 담고 있습니다.`, // AI가 요약
-        coverImage: `https://picsum.photos/300/400?random=${Date.now()}`, // AI가 생성한 표지
-        coverModification: "",
-      };
+    // 즉시 첫 호출
+    pollAiData();
 
-      setPublishData(aiGeneratedData);
-      setIsGenerating(false);
-    }, 3000); // 3초 로딩 시뮬레이션
-  };
+    // 1초마다 폴링 (성공할 때까지)
+    const interval = setInterval(() => {
+      if (!isLoading) {
+        clearInterval(interval);
+        return;
+      }
+      pollAiData();
+    }, 1000);
 
+    // 컴포넌트 언마운트시 폴링 정리
+    return () => clearInterval(interval);
+  }, [draftId, navigate, isLoading]);
+
+  // 요약 내용 수정 핸들러
   const handleSummaryChange = (e) => {
-    setPublishData({
-      ...publishData,
+    setAiData({
+      ...aiData,
       summary: e.target.value,
     });
   };
 
+  // 표지 수정사항 입력 핸들러
   const handleCoverModificationChange = (e) => {
-    setPublishData({
-      ...publishData,
-      coverModification: e.target.value,
-    });
+    setCoverModification(e.target.value);
   };
 
+  // 표지 재생성 핸들러
   const handleRegenerateCover = async () => {
-    if (!publishData.coverModification.trim()) {
+    if (!coverModification.trim()) {
       alert("표지 수정사항을 입력해주세요.");
       return;
     }
 
     setIsRegeneratingCover(true);
 
-    // AI API 호출 시뮬레이션
-    setTimeout(() => {
-      setPublishData({
-        ...publishData,
-        coverImage: `https://picsum.photos/300/400?random=${Date.now()}`,
-        coverModification: "",
+    // 재생성 요청
+    try {
+      await apiClient.post(`/ai/${draftId}/regenerate`, {
+        userPrompt: coverModification,
       });
-      setIsRegeneratingCover(false);
-      alert("표지가 재생성되었습니다!");
-    }, 2000);
+      console.log("표지 재생성 요청 전송됨");
+    } catch (error) {
+      console.error("표지 재생성 요청 실패:", error);
+      // 요청 실패해도 폴링을 시작함 (이미 처리 중일 수 있음)
+    }
+
+    // 재생성 폴링 시작 (1초마다)
+    const pollRegeneratedData = async () => {
+      try {
+        const response = await apiClient.get(`/ai/${draftId}`);
+        console.log("재생성 폴링 응답:", response.data);
+
+        // 성공시 coverImageUrl만 업데이트 (summary는 유지)
+        setAiData((prevData) => ({
+          ...prevData,
+          coverImageUrl: response.data.coverImageUrl,
+          // summary는 사용자가 수정했을 수 있으므로 유지
+        }));
+
+        setIsRegeneratingCover(false);
+        setCoverModification(""); // 입력 필드 초기화
+        alert("표지가 재생성되었습니다!");
+      } catch (error) {
+        // 실패시 계속 재생성 로딩 상태 유지
+        console.error("재생성 폴링 실패:", error);
+      }
+    };
+
+    // 즉시 첫 폴링
+    pollRegeneratedData();
+
+    // 1초마다 폴링 (성공할 때까지)
+    const regenerateInterval = setInterval(() => {
+      if (!isRegeneratingCover) {
+        clearInterval(regenerateInterval);
+        return;
+      }
+      pollRegeneratedData();
+    }, 1000);
+
+    // 폴링 정리는 isRegeneratingCover 상태 변경시 자동으로 처리됨
   };
 
+  // 출간 신청 핸들러
   const handlePublishRequest = () => {
+    if (!aiData) {
+      alert("AI 데이터가 준비되지 않았습니다.");
+      return;
+    }
+
     if (window.confirm("정말로 출간 신청하시겠습니까?")) {
       // 출간된 책 목록에 추가 (localStorage 사용)
       const publishedBooks = JSON.parse(
         localStorage.getItem("publishedBooks") || "[]"
       );
+
       const newBook = {
-        id: Date.now(),
-        title: publishData.title,
-        content: publishData.content,
-        author: "홍길동", // 실제로는 현재 사용자 정보
-        categoryName: publishData.category,
+        id: aiData.id || Date.now(),
+        title: `Draft ${draftId}`, // 실제로는 원본 제목을 가져와야 하지만 지시사항에 따라 단순화
+        author: "작가명", // 실제로는 현재 사용자 정보
+        categoryName: aiData.category,
         createDate: new Date().toISOString(),
         updateDate: new Date().toISOString(),
-        coverImgUrl: publishData.coverImage,
-        price: publishData.expectedPoints,
-        summary: publishData.summary,
+        coverImgUrl: aiData.coverImageUrl,
+        price: aiData.price,
+        summary: aiData.summary,
+        isBestseller: false,
       };
 
       publishedBooks.push(newBook);
@@ -115,15 +157,11 @@ function BookPublish() {
     }
   };
 
-  if (!bookData) {
-    return <Container>로딩 중...</Container>;
-  }
-
   return (
     <Container>
       <PageTitle>책 출간 준비</PageTitle>
 
-      {isGenerating ? (
+      {isLoading ? (
         <LoadingContainer>
           <LoadingText>AI가 책 정보를 생성하고 있습니다...</LoadingText>
           <LoadingSpinner />
@@ -131,23 +169,13 @@ function BookPublish() {
       ) : (
         <ContentWrapper>
           <Section>
-            <SectionTitle>책 제목</SectionTitle>
-            <ReadOnlyField>{publishData.title}</ReadOnlyField>
-          </Section>
-
-          <Section>
-            <SectionTitle>책 내용</SectionTitle>
-            <ContentScrollBox>{publishData.content}</ContentScrollBox>
-          </Section>
-
-          <Section>
             <SectionTitle>카테고리</SectionTitle>
-            <CategoryText>{publishData.category}</CategoryText>
+            <CategoryText>{aiData.category}</CategoryText>
           </Section>
 
           <Section>
             <SectionTitle>예상 포인트</SectionTitle>
-            <PointsText>{publishData.expectedPoints}p</PointsText>
+            <PointsText>{aiData.price}p</PointsText>
           </Section>
 
           <Section>
@@ -156,7 +184,7 @@ function BookPublish() {
               AI가 생성한 줄거리입니다. 내용을 직접 수정할 수 있습니다.
             </SummaryDescription>
             <SummaryTextarea
-              value={publishData.summary}
+              value={aiData.summary}
               onChange={handleSummaryChange}
               placeholder="AI가 생성한 줄거리를 수정할 수 있습니다."
             />
@@ -166,19 +194,23 @@ function BookPublish() {
             <SectionTitle>책 표지</SectionTitle>
             <CoverContainer>
               <CoverImageWrapper>
-                <CoverImage src={publishData.coverImage} alt="책 표지" />
+                <CoverImage src={aiData.coverImageUrl} alt="책 표지" />
               </CoverImageWrapper>
               <CoverControls>
+                <SectionTitle style={{ marginBottom: "0.5rem" }}>
+                  책 표지 수정 사항
+                </SectionTitle>
                 <CoverModificationInput
-                  value={publishData.coverModification}
+                  value={coverModification}
                   onChange={handleCoverModificationChange}
                   placeholder="표지 수정사항을 입력하세요 (예: 더 밝은 색상으로, 글씨 크기를 크게)"
+                  disabled={isRegeneratingCover}
                 />
                 <RegenerateCoverButton
                   onClick={handleRegenerateCover}
-                  disabled={isRegeneratingCover}
+                  disabled={isRegeneratingCover || !coverModification.trim()}
                 >
-                  {isRegeneratingCover ? "생성 중..." : "표지 재생성하기"}
+                  {isRegeneratingCover ? "재생성 중..." : "표지 재생성하기"}
                 </RegenerateCoverButton>
               </CoverControls>
             </CoverContainer>
@@ -265,30 +297,6 @@ const SectionTitle = styled.h3`
   text-align: left;
 `;
 
-const ReadOnlyField = styled.div`
-  padding: 0.75rem;
-  background-color: #f8f9fa;
-  border: 1px solid #e9ecef;
-  border-radius: 6px;
-  color: #333;
-  font-size: 1rem;
-  text-align: left;
-`;
-
-const ContentScrollBox = styled.div`
-  padding: 0.75rem;
-  background-color: #f8f9fa;
-  border: 1px solid #e9ecef;
-  border-radius: 6px;
-  max-height: 200px;
-  overflow-y: auto;
-  white-space: pre-wrap;
-  line-height: 1.5;
-  color: #333;
-  font-size: 0.95rem;
-  text-align: left;
-`;
-
 const SummaryDescription = styled.p`
   font-size: 0.9rem;
   color: #666;
@@ -358,7 +366,7 @@ const CoverImageWrapper = styled.div`
   &::after {
     content: "";
     display: block;
-    padding-bottom: 150%; /* 3:2 비율 (BookDetail과 동일) */
+    padding-bottom: 150%; /* 3:2 비율 */
   }
 `;
 
@@ -376,7 +384,7 @@ const CoverImage = styled.img`
 
 const CoverControls = styled.div`
   flex: 1;
-  max-width: calc(100% - 240px - 2rem); /* 전체에서 이미지 너비와 gap 제외 */
+  max-width: calc(100% - 240px - 2rem);
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -389,9 +397,9 @@ const CoverModificationInput = styled.textarea`
   border-radius: 6px;
   font-size: 0.95rem;
   box-sizing: border-box;
-  min-height: 300px;
-  max-height: 300px;
-  resize: none;
+  min-height: 120px;
+  max-height: 200px;
+  resize: vertical;
   font-family: inherit;
   line-height: 1.5;
 
@@ -399,10 +407,15 @@ const CoverModificationInput = styled.textarea`
     outline: none;
     border-color: #000;
   }
+
+  &:disabled {
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+  }
 `;
 
 const RegenerateCoverButton = styled.button`
-  align-self: flex-end; /* 🔥 부모 안에서 오른쪽 끝 정렬 */
+  align-self: flex-end;
   padding: 0.75rem 2rem;
   background-color: #a3a5a7;
   color: white;

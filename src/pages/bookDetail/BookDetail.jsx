@@ -18,9 +18,10 @@ const mockBook = {
   categoryName: "테스트 카테고리",
   createDate: "2024-01-01T10:00:00Z",
   updateDate: "2024-05-01T12:00:00Z",
-  content:
+  summary:
     "이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n이것은 가상의 줄거리 입니다. \n",
   price: 1000, // 포인트 가격
+  isBestseller: true, // 베스트셀러 여부 추가
   fullContent: `제1장 시작
 
 이것은 책의 전체 내용입니다. 
@@ -42,7 +43,10 @@ const BookDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [book, setBook] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const { userInfo } = useAuthStore((state) => state);
+
   // 권한 관련 상태
   const [hasAccess, setHasAccess] = useState(false);
   const [showContent, setShowContent] = useState(false);
@@ -65,25 +69,68 @@ const BookDetailPage = () => {
   const [userPoints, setUserPoints] = useState(2000); // 테스트용 초기 포인트 (포인트 부족 테스트를 위해서는 500 등으로 설정)
 
   useEffect(() => {
-    setBook(mockBook);
+    const fetchBookDetail = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-    // 실제 API 연동 시 아래 주석 해제하고 위 mockBook 삭제하세요.
-    /*
-    axios
-      .get(`http://localhost:8080/api/books/${id}`)
-      .then((res) => setBook(res.data))
-      .catch((err) => {
-        console.error("책 정보를 불러오는 데 실패했습니다!!", err);
-      });
-    */
+        const response = await apiClient.get(`/products/${id}`);
+        console.log("책 상세 정보 응답:", response.data);
+        // {
+        //   "id": 1,
+        //   "coverImageUrl": "http://img.com/cover.jpg",
+        //   "category": "문학",
+        //   "price": 10000,
+        //   "authorNickname": "nonenan",
+        //   "publishedAt": "2025-06-30T00:00:00.000+00:00",
+        //   "title": "타이틀",
+        //   "summary": "요약",
+        //   "isBestseller": true
+        //   }
+        // API 응답 구조에 맞게 데이터 매핑
+        const bookData = {
+          id: response.data.id,
+          coverImgUrl: response.data.coverImageUrl,
+          title: response.data.title,
+          author: response.data.authorNickname, // API의 authorNickname을 author로 매핑
+          categoryName: response.data.category, // API의 category를 categoryName으로 매핑
+          createDate: response.data.publishedAt, // API의 publishedAt을 createDate로 매핑
+          summary: response.data.summary, // API의 summary를 content로 매핑
+          price: response.data.price,
+          isBestseller: response.data.isBestseller, // 베스트셀러 여부 추가
+          fullContent: ``, // 전체 내용은 별도 API에서 가져오므로 빈 값
+        };
+
+        setBook(bookData);
+      } catch (err) {
+        console.error("책 상세 정보를 불러오는 데 실패했습니다:", err);
+        setError("책 정보를 불러오는 데 실패했습니다. 다시 시도해 주세요.");
+
+        // 에러 발생 시 목업 데이터 사용
+        console.log("목업 데이터로 폴백합니다.");
+        setBook(mockBook);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchBookDetail();
+    }
+
+    // 목업 데이터로 테스트하려면 아래 주석을 해제하고 위 fetchBookDetail() 호출을 주석처리하세요.
+    // setBook(mockBook);
+    // setLoading(false);
   }, [id]);
 
+  // (주석풀기)
   const checkAccess = () => {
     setIsLoadingAccess(true);
     console.log(userInfo);
     const res = apiClient
       .get(
-        `/userAccessProfiles/${userInfo?.id}/accesstocontent?productId=${id}`
+        `/view/1/accesstocontent?productId=${id}`
+        // `/view/${userInfo?.id}/accesstocontent?productId=${id}`
       )
       .then((res) => {
         console.log(res);
@@ -113,6 +160,10 @@ const BookDetailPage = () => {
     const hasBookAccess = await checkAccess();
 
     if (hasBookAccess) {
+      const res = await apiClient.put(`/products/${id}/trackview`, {
+        productId: id,
+        userId: userInfo?.id,
+      });
       // 권한이 있으면 BookContent 페이지로 이동
       navigate(`/books/${id}/content`);
     } else {
@@ -127,11 +178,12 @@ const BookDetailPage = () => {
     navigate("/subscription"); // 구독 페이지로 이동
   };
 
-  // 구매하기 버튼 핸들러
+  // 구매하기 버튼 핸들러 (주석풀기)
   const handlePurchase = async () => {
     setIsLoadingPurchase(true);
     const res = await apiClient
-      .get(`/userAccessProfiles/${userInfo?.id}/checkpurchaseability`)
+      .get(`/userAccessProfiles/1/checkpurchaseability`)
+      // .get(`/userAccessProfiles/${userInfo?.id}/checkpurchaseability`)
       .then((res) => {
         setPurchaseData(res?.data);
       })
@@ -166,15 +218,17 @@ const BookDetailPage = () => {
     setIsPurchaseCompleteModalOpen(false);
   };
 
-  if (!book) return <Wrapper>로딩 중...</Wrapper>;
+  if (loading) return <Wrapper>로딩 중...</Wrapper>;
+  if (error && !book) return <ErrorWrapper>{error}</ErrorWrapper>;
+  if (!book) return <Wrapper>책 정보를 찾을 수 없습니다.</Wrapper>;
 
   return (
     <Wrapper>
       <Container>
         <ImageWrapper>
           <CoverImage
-            src={book.coverImgUrl}
-            alt="표지"
+            src={book?.coverImgUrl}
+            alt={`${book?.title} 표지`}
             onError={(e) => {
               e.target.onerror = null;
               e.target.src = "";
@@ -182,26 +236,38 @@ const BookDetailPage = () => {
               e.target.style.border = "1px solid #ccc";
             }}
           />
+          {/* 베스트셀러 뱃지 - 베스트셀러인 경우에만 표시 */}
+          {book?.isBestseller && (
+            <BestsellerBadge>
+              <img src="/logo/orangebestseller.svg" alt="베스트셀러" />
+            </BestsellerBadge>
+          )}
         </ImageWrapper>
 
         <ContentWrapper>
-          <Category>{book.categoryName}</Category>
-          <Title>{book.title}</Title>
+          <Category>{book?.categoryName || "카테고리 없음"}</Category>
+          <Title>{book?.title || "제목 없음"}</Title>
 
-          <DateInfo>{new Date(book.createDate).toLocaleDateString()}</DateInfo>
+          <DateInfo>
+            {book?.createDate
+              ? new Date(book.createDate).toLocaleDateString()
+              : "날짜 정보 없음"}
+          </DateInfo>
 
           <AuthorWrapper>
-            <AuthorName>{book.author}</AuthorName>
+            <AuthorName>{book?.author || "작가 정보 없음"}</AuthorName>
           </AuthorWrapper>
 
           <PointWrapper>
             <PointLabel>포인트</PointLabel>
-            <PointValue>{book.price}p</PointValue>
+            <PointValue>{book?.price || 0}p</PointValue>
           </PointWrapper>
 
           <SummaryWrapper>
             <SummaryTitle>줄거리</SummaryTitle>
-            <SummaryContent>{book.content}</SummaryContent>
+            <SummaryContent>
+              {book?.summary || "줄거리 정보가 없습니다."}
+            </SummaryContent>
           </SummaryWrapper>
         </ContentWrapper>
       </Container>
@@ -338,6 +404,14 @@ const Wrapper = styled.div`
   font-weight: bold;
 `;
 
+const ErrorWrapper = styled.div`
+  margin-top: 6.25rem;
+  text-align: center;
+  font-size: 1.1rem;
+  color: #e74c3c;
+  padding: 2rem;
+`;
+
 const Container = styled.div`
   display: flex;
   padding: 0 5rem;
@@ -354,7 +428,6 @@ const ImageWrapper = styled.div`
     display: block;
     padding-bottom: 150%;
   }
-  background-color: green;
 `;
 
 const CoverImage = styled.img`
@@ -365,6 +438,28 @@ const CoverImage = styled.img`
   top: 0;
   left: 0;
   border: 0.0625rem solid #ccc;
+`;
+
+// 베스트셀러 뱃지 스타일 (Card.jsx와 동일)
+const BestsellerBadge = styled.div`
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 70px;
+  height: 70px;
+  z-index: 10;
+
+  & > img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  }
+
+  /* 호버 시 뱃지는 확대되지 않도록 */
+  &:hover {
+    transform: none;
+  }
 `;
 
 const ContentWrapper = styled.div`

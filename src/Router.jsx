@@ -1,7 +1,6 @@
 import { createBrowserRouter } from "react-router-dom";
 import { Main } from "./pages/main/Main";
 import Roots from "./pages/Roots";
-import NewBook from "./pages/newbook/NewBook";
 import Edit from "./pages/edit/Edit";
 import BookDetailPage from "./pages/bookDetail/BookDetail";
 import BookContent from "./pages/bookDetail/BookContent";
@@ -26,10 +25,6 @@ const router = createBrowserRouter([
       {
         path: "",
         element: <Main />,
-      },
-      {
-        path: "books/new",
-        element: <NewBook />,
       },
       {
         path: "books/edit/:bookid",
@@ -72,11 +67,15 @@ const router = createBrowserRouter([
         element: <WriteBook />,
       },
       {
+        path: "write/:draftId", // 임시저장 글쓰기 수정정 페이지
+        element: <WriteBook />,
+      },
+      {
         path: "drafts", // 임시 저장 목록 페이지
         element: <MyWritings />,
       },
       {
-        path: "publish", // 책 출간 페이지
+        path: "publish/:draftId", // 책 출간 페이지
         element: <BookPublish />,
       },
       {

@@ -1,15 +1,18 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
+import { signup } from "../../service/api";
 
 function SignUp() {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   const [form, setForm] = useState({
-    name: "",
-    username: "",
+    nickname: "",
+    email: "",
     password: "",
     confirmPassword: "",
-    marketingAgree: false,
+    marketingConsent: false,
   });
 
   const handleChange = (e) => {
@@ -20,13 +23,26 @@ function SignUp() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+    setIsLoading(true);
+
     if (form.password !== form.confirmPassword) {
-      alert("비밀번호가 일치하지 않습니다.");
+      setError("비밀번호가 일치하지 않습니다.");
       return;
     }
-    navigate("/signup/complete");
+    try {
+      const response = await signup(form);
+      if (response.success) {
+        navigate("/signup/complete");
+      } else {
+        setError(response.message || "회원가입에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error("회원가입 에러:", error);
+      setError("회원가입 중 오류가 발생했습니다. 다시 시도해주세요.");
+    }
   };
 
   return (
@@ -39,8 +55,8 @@ function SignUp() {
             <Label>이름</Label>
             <Input
               type="text"
-              name="name"
-              value={form.name}
+              name="nickname"
+              value={form.nickname}
               onChange={handleChange}
               placeholder="이름을 입력하세요"
               required
@@ -51,8 +67,8 @@ function SignUp() {
             <Label>아이디</Label>
             <Input
               type="text"
-              name="username"
-              value={form.username}
+              name="email"
+              value={form.email}
               onChange={handleChange}
               placeholder="아이디를 입력하세요"
               required
@@ -87,15 +103,19 @@ function SignUp() {
             <CheckboxLabel>
               <Checkbox
                 type="checkbox"
-                name="marketingAgree"
-                checked={form.marketingAgree}
+                name="marketingConsent"
+                checked={form.marketingConsent}
                 onChange={handleChange}
               />
               <CheckboxText>마케팅 수신에 동의합니다.</CheckboxText>
             </CheckboxLabel>
           </CheckboxContainer>
 
-          <SubmitButton type="submit">회원가입</SubmitButton>
+          {/* 에러 메시지 표시 */}
+          {error && <ErrorMessage>{error}</ErrorMessage>}
+          <SubmitButton type="submit">
+            {isLoading ? "회원가입 중..." : "회원가입"}
+          </SubmitButton>
         </Form>
 
         <LoginBox>
@@ -242,4 +262,14 @@ const LoginLink = styled.span`
   &:hover {
     color: #333333;
   }
+`;
+const ErrorMessage = styled.div`
+  color: #dc3545;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 0.375rem;
+  text-align: center;
 `;
