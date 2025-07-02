@@ -13,7 +13,6 @@ import {
 } from "@mui/material";
 import { ThemeProvider as StyledThemeProvider } from "styled-components";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import NewBook from "./pages/newbook/NewBook.jsx";
 import { initializeAuth } from "./service/api";
 
 function App() {
