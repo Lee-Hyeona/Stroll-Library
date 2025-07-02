@@ -163,7 +163,7 @@ export const del = async (url, config = {}) => {
  */
 export const signup = async (signupData) => {
   try {
-    const response = await post("/users/register", signupData);
+    const response = await post("/auth/register", signupData);
 
     if (response?.data) {
       return formatSuccessResponse(response.data, "회원가입에 성공했습니다.");

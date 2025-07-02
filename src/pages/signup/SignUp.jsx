@@ -9,7 +9,7 @@ function SignUp() {
   const [error, setError] = useState("");
   const [form, setForm] = useState({
     nickname: "",
-    email: "",
+    accountId: "",
     password: "",
     confirmPassword: "",
     marketingConsent: false,
@@ -67,8 +67,8 @@ function SignUp() {
             <Label>아이디</Label>
             <Input
               type="text"
-              name="email"
-              value={form.email}
+              name="accountId"
+              value={form.accountId}
               onChange={handleChange}
               placeholder="아이디를 입력하세요"
               required
