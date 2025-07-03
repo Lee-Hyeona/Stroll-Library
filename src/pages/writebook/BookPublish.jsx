@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import styled from "styled-components";
 import { useNavigate, useParams } from "react-router-dom";
 import apiClient from "../../service/axios";
@@ -14,6 +14,10 @@ function BookPublish() {
   // 표지 재생성 관련 상태
   const [coverModification, setCoverModification] = useState("");
   const [isRegeneratingCover, setIsRegeneratingCover] = useState(false);
+  const isRegeneratingCoverRef = useRef(isRegeneratingCover);
+  useEffect(() => {
+    isRegeneratingCoverRef.current = isRegeneratingCover;
+  }, [isRegeneratingCover]);
 
   // AI 데이터 폴링 (1초마다)
   useEffect(() => {
@@ -113,7 +117,8 @@ function BookPublish() {
 
     // 1초마다 폴링 (성공할 때까지)
     const regenerateInterval = setInterval(() => {
-      if (!isRegeneratingCover) {
+      // useRef로 최신 상태 참조
+      if (!isRegeneratingCoverRef.current) {
         clearInterval(regenerateInterval);
         return;
       }
@@ -141,7 +146,7 @@ function BookPublish() {
           requestData
         );
 
-        // 201 응답 확인
+        // 200 응답 확인
         if (response.status === 200) {
           alert("출간 신청이 완료되었습니다!");
           navigate("/");
@@ -165,6 +170,7 @@ function BookPublish() {
       ) : (
         <ContentWrapper>
           <Section>
+            <SectionTitle>카테고리</SectionTitle>
             <CategoryText>{aiData.category}</CategoryText>
           </Section>
 
