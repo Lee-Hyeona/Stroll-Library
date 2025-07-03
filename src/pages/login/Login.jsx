@@ -49,7 +49,8 @@ function Login() {
         navigate("/"); // 메인 페이지로 이동
       } else {
         // 로그인 실패
-        setError(response.message || "로그인에 실패했습니다.");
+        console.log("로그인 실패:", response.message);
+        setError("로그인에 실패했습니다." || response.message);
       }
     } catch (error) {
       console.error("로그인 에러:", error);

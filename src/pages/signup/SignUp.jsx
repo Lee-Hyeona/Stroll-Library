@@ -103,8 +103,8 @@ function SignUp() {
             <CheckboxLabel>
               <Checkbox
                 type="checkbox"
-                name="marketingConsent"
-                checked={form.marketingConsent}
+                name="agreedToMarketing"
+                checked={form.agreedToMarketing}
                 onChange={handleChange}
               />
               <CheckboxText>마케팅 수신에 동의합니다.</CheckboxText>

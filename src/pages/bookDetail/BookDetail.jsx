@@ -182,7 +182,10 @@ const BookDetailPage = () => {
   const handlePurchase = async () => {
     setIsLoadingPurchase(true);
     const res = await apiClient
-      .get(`/userAccessProfiles/${userInfo.id}/checkpurchaseability`)
+      // .get(
+      //   `/userAccessProfiles/${userInfo.id}/checkpurchaseability?productId=${id}`
+      // )
+      .get(`/view/${userInfo.id}/checkpurchaseability?productId=${id}`)
       .then((res) => {
         setPurchaseData(res?.data);
       })
