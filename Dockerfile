@@ -7,6 +7,10 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN rm -rf node_modules package-lock.json && npm install
 
+#.env.local 
+ENV PORT=80 \
+    VITE_API_BASE_URL="http://20.249.152.233:8080"
+    
 # 전체 소스 코드 복사 후 빌드 실행
 COPY . .
 RUN npm run build
@@ -20,10 +24,6 @@ COPY --from=build /app/dist /usr/share/nginx/html
 
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
-
-#.env.local 
-ENV PORT=80 \
-    VITE_API_BASE_URL="http://20.249.152.233:8080"
 
 # Expose port 80
 EXPOSE $PORT
