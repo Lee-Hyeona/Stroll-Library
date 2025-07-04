@@ -187,7 +187,14 @@ const BookDetailPage = () => {
       // )
       .get(`/view/${userInfo.id}/checkpurchaseability?productId=${id}`)
       .then((res) => {
+        console.log(res);
         setPurchaseData(res?.data);
+        // 포인트 확인 후 적절한 모달 표시
+        if (res?.data?.canPurchase) {
+          setIsPurchaseModalOpen(true);
+        } else {
+          setIsInsufficientPointsModalOpen(true);
+        }
       })
       .catch((err) => {
         console.error("구매 가능 여부를 확인하는 데 실패했습니다", err);
@@ -196,23 +203,20 @@ const BookDetailPage = () => {
         setIsLoadingPurchase(false);
         setIsModalOpen(false);
       });
-    // 포인트 확인 후 적절한 모달 표시
-    if (res?.data?.canPurchase) {
-      setIsPurchaseModalOpen(true);
-    } else {
-      setIsInsufficientPointsModalOpen(true);
-    }
   };
 
   // 실제 구매 처리
-  const handleConfirmPurchase = () => {
-    // 포인트 차감
-    // setUserPoints(userPoints - book.price);
-    // 구매한 책 목록에 추가
-    // setOwnedBooks([...ownedBooks, book.id]);
-    // 구매 확인 모달 닫고 완료 모달 열기
-    setIsPurchaseModalOpen(false);
-    setIsPurchaseCompleteModalOpen(true);
+  const handleConfirmPurchase = async () => {
+    const res = await apiClient
+      .post(`/view/${userInfo.id}/purchasewithpoints?productId=${id}`)
+      .then((res) => {
+        console.log(res);
+        setIsPurchaseModalOpen(false);
+        setIsPurchaseCompleteModalOpen(true);
+      })
+      .catch((err) => {
+        console.error(err);
+      });
   };
 
   // 구매 완료 후 모달 닫기
